@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VIA7012 · Semana 6 · Laboratorio de prompts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy-950:#041B45; --navy-900:#062B70; --navy-800:#073587;
+    --blue-700:#0944AF; --blue-500:#2073F5; --teal-400:#1BDAB5;
+    --amber:#F5B942; --coral:#FF6B6B; --gray-300:#BEC0BD; --white:#FFFFFF;
+    --glass:rgba(255,255,255,0.055); --glass-strong:rgba(255,255,255,0.09);
+    --border-soft:rgba(255,255,255,0.14); --border-strong:rgba(255,255,255,0.26);
+    --ink:#EAF0FC; --ink-dim:#AFC0E0; --ink-faint:#7C90BC;
+    --font-display:'Space Grotesk', sans-serif; --font-body:'Inter', sans-serif; --font-mono:'JetBrains Mono', monospace;
+  }
+  *,*::before,*::after{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0; min-height:100%;
+    background:
+      radial-gradient(ellipse 900px 600px at 88% -6%, rgba(32,115,245,0.24), transparent 60%),
+      radial-gradient(ellipse 700px 500px at -4% 106%, rgba(27,218,181,0.14), transparent 55%),
+      linear-gradient(160deg, var(--navy-950) 0%, var(--navy-900) 46%, var(--navy-800) 100%);
+    background-attachment:fixed; color:var(--ink); font-family:var(--font-body); -webkit-font-smoothing:antialiased;
+  }
+  ::selection{ background:var(--blue-500); color:#fff; }
+  button, input, select, textarea{ font-family:inherit; }
+  button{ cursor:pointer; }
+  a{ color:inherit; }
+  :focus-visible{ outline:2px solid var(--teal-400); outline-offset:2px; }
+  .noise{ position:fixed; inset:0; pointer-events:none; opacity:0.035; mix-blend-mode:overlay; z-index:0;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+  .mark{ position:relative; width:22px; height:22px; flex:0 0 auto; }
+  .mark span{ position:absolute; width:14px; height:14px; border-radius:3px; }
+  .mark span.t{ top:0; left:0; background:var(--teal-400); }
+  .mark span.b{ bottom:0; right:0; background:var(--blue-500); }
+
+  /* ---------- topbar + tabs ---------- */
+  header.topbar{ position:sticky; top:0; z-index:40; background:rgba(4,27,69,0.72); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); border-bottom:1px solid var(--border-soft); }
+  .topbar-row{ display:flex; align-items:center; justify-content:space-between; gap:14px; padding:14px clamp(16px,4vw,48px) 10px; }
+  .brand{ display:flex; align-items:center; gap:10px; min-width:0; }
+  .brand img{ height:22px; width:auto; display:block; opacity:0.95; }
+  .brand .divider{ width:1px; height:18px; background:var(--border-strong); }
+  .brand .tag{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:0.12em; color:var(--ink-dim); text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .top-actions{ display:flex; gap:8px; align-items:center; flex:0 0 auto; }
+  .pill-btn{ display:inline-flex; align-items:center; gap:7px; background:var(--glass); border:1px solid var(--border-soft); color:var(--ink); padding:8px 13px; border-radius:100px; font-size:12px; font-weight:600; transition:background .2s, border-color .2s; }
+  .pill-btn:hover{ background:var(--glass-strong); border-color:var(--border-strong); }
+  .pill-btn.primary{ background:linear-gradient(90deg,var(--teal-400),var(--blue-500)); color:#04193f; border:none; }
+  .pill-btn svg{ width:14px; height:14px; }
+  .tabs{ display:flex; gap:4px; padding:0 clamp(16px,4vw,48px); overflow-x:auto; scrollbar-width:none; }
+  .tabs::-webkit-scrollbar{ display:none; }
+  .tab{ flex:0 0 auto; background:transparent; border:none; border-bottom:2px solid transparent; color:var(--ink-dim); padding:10px 12px 11px; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:8px; white-space:nowrap; transition:color .2s, border-color .2s; }
+  .tab .n{ font-family:var(--font-mono); font-size:10.5px; color:var(--ink-faint); }
+  .tab:hover{ color:#fff; }
+  .tab.active{ color:#fff; border-bottom-color:var(--teal-400); }
+  .tab.active .n{ color:var(--teal-400); }
+  .tab .done{ width:7px; height:7px; border-radius:50%; background:var(--teal-400); display:none; }
+  .tab.has-done .done{ display:inline-block; }
+
+  /* ---------- layout ---------- */
+  main{ position:relative; z-index:1; max-width:1180px; margin:0 auto; padding:34px clamp(16px,4vw,48px) 90px; }
+  .panel{ display:none; }
+  .panel.active{ display:block; animation:fadeIn .45s ease; }
+  @keyframes fadeIn{ from{ opacity:0; transform:translateY(6px);} to{ opacity:1; transform:none;} }
+  @media (prefers-reduced-motion:reduce){ .panel.active{ animation:none; } html{ scroll-behavior:auto; } }
+
+  .eyebrow{ display:inline-flex; align-items:center; gap:8px; font-family:var(--font-mono); font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--teal-400); font-weight:500; margin-bottom:12px; }
+  .eyebrow::before{ content:''; width:16px; height:1px; background:var(--teal-400); }
+  h1.title{ font-family:var(--font-display); font-weight:700; color:#fff; font-size:clamp(26px,3.6vw,42px); line-height:1.1; letter-spacing:-0.01em; margin:0 0 14px; }
+  h2{ font-family:var(--font-display); font-weight:700; color:#fff; font-size:clamp(19px,2.2vw,24px); line-height:1.2; margin:0 0 10px; letter-spacing:-0.005em; }
+  h3{ font-family:var(--font-display); font-weight:600; color:#fff; font-size:16px; margin:0 0 8px; }
+  p.lede{ font-size:clamp(14.5px,1.5vw,17px); line-height:1.62; color:var(--ink-dim); max-width:780px; margin:0 0 26px; }
+  p{ line-height:1.62; }
+  .muted{ color:var(--ink-dim); }
+  .faint{ color:var(--ink-faint); }
+  .mono{ font-family:var(--font-mono); }
+  .label{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:0.1em; color:var(--teal-400); margin-bottom:8px; text-transform:uppercase; }
+
+  .card{ background:var(--glass); border:1px solid var(--border-soft); border-radius:18px; backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); padding:22px 24px; }
+  .card.tight{ padding:16px 18px; border-radius:14px; }
+  .card.accent{ border-color:rgba(27,218,181,0.35); background:rgba(27,218,181,0.06); }
+  .card.warn{ border-color:rgba(245,185,66,0.4); background:rgba(245,185,66,0.07); }
+  .card.danger{ border-color:rgba(255,107,107,0.4); background:rgba(255,107,107,0.07); }
+  .grid{ display:grid; gap:14px; }
+  .g2{ grid-template-columns:repeat(2,1fr); } .g3{ grid-template-columns:repeat(3,1fr); } .g4{ grid-template-columns:repeat(4,1fr); }
+  @media (max-width:860px){ .g3,.g4{ grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:600px){ .g2,.g3,.g4{ grid-template-columns:1fr;} }
+  .stack{ display:flex; flex-direction:column; gap:14px; }
+  .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .sp{ justify-content:space-between; }
+
+  .chip{ display:inline-flex; align-items:center; gap:6px; font-family:var(--font-mono); font-size:11.5px; font-weight:500; letter-spacing:0.02em; padding:7px 13px; border-radius:100px; border:1px solid var(--border-soft); background:var(--glass); color:var(--ink-dim); transition:all .2s; }
+  button.chip:hover{ border-color:var(--border-strong); color:#fff; }
+  .chip.on{ background:rgba(27,218,181,0.14); border-color:var(--teal-400); color:#fff; }
+  .chip.sm{ font-size:10.5px; padding:5px 10px; }
+  .tag-group{ display:flex; gap:6px; flex-wrap:wrap; }
+
+  /* ---------- forms ---------- */
+  textarea, input[type=text], select{ width:100%; background:rgba(4,27,69,0.45); border:1px solid var(--border-soft); border-radius:12px; color:var(--ink); font-size:13.5px; line-height:1.55; padding:11px 13px; transition:border-color .2s; }
+  textarea{ min-height:88px; resize:vertical; }
+  textarea:focus, input:focus, select:focus{ border-color:var(--teal-400); outline:none; }
+  select{ appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23AFC0E0' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; padding-right:34px; }
+  select option{ background:#062B70; color:#fff; }
+  .field{ display:flex; flex-direction:column; gap:6px; }
+  .field .fl{ font-size:12px; font-weight:600; color:var(--ink-dim); }
+  .seg{ display:inline-flex; background:rgba(4,27,69,0.45); border:1px solid var(--border-soft); border-radius:100px; padding:3px; gap:2px; flex-wrap:wrap; }
+  .seg button{ background:transparent; border:none; color:var(--ink-dim); font-size:12px; font-weight:600; padding:7px 12px; border-radius:100px; transition:all .18s; }
+  .seg button:hover{ color:#fff; }
+  .seg button.on{ background:var(--glass-strong); color:#fff; box-shadow:inset 0 0 0 1px var(--border-strong); }
+  .seg button.on[data-v="nucleo"], .seg button.on[data-v="fuerte"], .seg button.on[data-v="disponible"], .seg button.on[data-v="relevante"], .seg button.on[data-v="bidireccional"]{ background:rgba(27,218,181,0.18); box-shadow:inset 0 0 0 1px var(--teal-400); }
+  .seg button.on[data-v="periferico"], .seg button.on[data-v="debil"], .seg button.on[data-v="limitado"], .seg button.on[data-v="mas"], .seg button.on[data-v="descendente"], .seg button.on[data-v="ascendente"]{ background:rgba(32,115,245,0.22); box-shadow:inset 0 0 0 1px var(--blue-500); }
+  .seg button.on[data-v="tension"], .seg button.on[data-v="desconocido"], .seg button.on[data-v="desconocida"], .seg button.on[data-v="medio"]{ background:rgba(245,185,66,0.2); box-shadow:inset 0 0 0 1px var(--amber); }
+  .seg button.on[data-v="omitido"], .seg button.on[data-v="inexistente"], .seg button.on[data-v="ausente"], .seg button.on[data-v="irrelevante"], .seg button.on[data-v="bloqueado"], .seg button.on[data-v="alto"]{ background:rgba(255,107,107,0.2); box-shadow:inset 0 0 0 1px var(--coral); }
+
+  /* ---------- lab stepper ---------- */
+  .stepper{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:22px; }
+  .step{ display:inline-flex; align-items:center; gap:8px; background:var(--glass); border:1px solid var(--border-soft); color:var(--ink-dim); padding:8px 13px 8px 9px; border-radius:100px; font-size:12px; font-weight:600; transition:all .2s; }
+  .step .num{ width:20px; height:20px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:10.5px; background:rgba(255,255,255,0.08); color:var(--ink); }
+  .step.active{ background:rgba(32,115,245,0.2); border-color:var(--blue-500); color:#fff; }
+  .step.active .num{ background:var(--blue-700); color:#fff; }
+  .step.done .num{ background:var(--teal-400); color:#04193f; }
+  .step:hover{ border-color:var(--border-strong); color:#fff; }
+  .phase{ display:none; } .phase.active{ display:block; }
+  .phase-arrow{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; font-family:var(--font-mono); font-size:11px; color:var(--ink-faint); margin:0 0 22px; }
+  .phase-arrow b{ color:var(--teal-400); font-weight:500; }
+
+  /* ---------- actor cards ---------- */
+  .actor{ display:grid; grid-template-columns:1fr auto; gap:12px; align-items:start; }
+  .actor .meta{ min-width:0; }
+  .actor .name{ font-weight:700; color:#fff; font-size:14px; margin-bottom:3px; }
+  .actor .grp{ font-family:var(--font-mono); font-size:10px; letter-spacing:0.08em; color:var(--ink-faint); text-transform:uppercase; }
+  .actor .desc{ font-size:12.5px; color:var(--ink-dim); line-height:1.5; margin-top:6px; }
+  .actor .initial{ display:inline-block; font-family:var(--font-mono); font-size:9.5px; padding:2px 7px; border-radius:100px; border:1px solid rgba(32,115,245,0.5); color:var(--blue-500); margin-left:6px; vertical-align:middle; }
+  @media (max-width:600px){ .actor{ grid-template-columns:1fr; } }
+
+  .rel{ display:grid; grid-template-columns:1.2fr 1.6fr auto; gap:12px; align-items:center; }
+  .rel .pair{ font-weight:600; color:#fff; font-size:13.5px; }
+  .rel .pair span{ color:var(--teal-400); font-family:var(--font-mono); font-size:11px; }
+  .rel .hint{ font-size:12px; color:var(--ink-dim); line-height:1.5; }
+  .rel.na{ opacity:.45; }
+  .check{ display:inline-flex; align-items:center; gap:8px; font-size:12px; font-weight:600; color:var(--ink-dim); cursor:pointer; user-select:none; }
+  .check input{ width:16px; height:16px; accent-color:var(--teal-400); }
+  @media (max-width:860px){ .rel{ grid-template-columns:1fr; } }
+
+  .voice{ border-left:3px solid var(--blue-500); padding-left:14px; }
+  .voice .who{ font-size:12px; font-weight:700; color:#fff; }
+  .voice .role{ font-family:var(--font-mono); font-size:10.5px; color:var(--ink-faint); }
+  .voice q{ display:block; font-size:13.5px; color:var(--ink); line-height:1.6; margin:6px 0 0; font-style:italic; quotes:"“" "”"; }
+  .data-row{ display:flex; gap:10px; align-items:baseline; font-size:13px; padding:7px 0; border-bottom:1px dashed var(--border-soft); }
+  .data-row:last-child{ border-bottom:none; }
+  .data-row .k{ flex:0 0 46%; color:var(--ink-dim); }
+  .data-row .v{ color:#fff; font-weight:600; }
+  .data-row .v.unknown{ color:var(--amber); font-weight:500; font-style:italic; }
+
+  /* ---------- KPIs ---------- */
+  .kpi{ padding:16px 18px; }
+  .kpi .val{ font-family:var(--font-display); font-size:30px; font-weight:700; color:#fff; line-height:1; }
+  .kpi .val small{ font-size:14px; color:var(--ink-faint); font-weight:500; }
+  .kpi .lbl{ font-size:12px; color:var(--ink-dim); margin-top:6px; font-weight:600; }
+  .kpi .read{ font-size:12px; color:var(--ink-faint); margin-top:8px; line-height:1.5; }
+  .bar{ height:6px; background:rgba(255,255,255,0.08); border-radius:100px; overflow:hidden; margin-top:10px; }
+  .bar i{ display:block; height:100%; background:linear-gradient(90deg,var(--teal-400),var(--blue-500)); width:0; transition:width .6s ease; }
+
+  .consequence{ display:grid; grid-template-columns:auto 1fr; gap:12px; align-items:start; }
+  .consequence .ico{ width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:15px; background:rgba(255,107,107,0.15); border:1px solid rgba(255,107,107,0.4); }
+  .consequence.mild .ico{ background:rgba(245,185,66,0.15); border-color:rgba(245,185,66,0.4); }
+  .consequence.ok .ico{ background:rgba(27,218,181,0.15); border-color:rgba(27,218,181,0.4); }
+  .consequence .t{ font-weight:700; color:#fff; font-size:13.5px; margin-bottom:3px; }
+  .consequence .d{ font-size:13px; color:var(--ink-dim); line-height:1.55; }
+
+  .diff{ font-size:13px; }
+  .diff .add{ color:var(--teal-400); } .diff .rem{ color:var(--coral); } .diff .chg{ color:var(--amber); }
+  .diff li{ margin:4px 0; }
+
+  /* ---------- map ---------- */
+  .map-wrap{ background:rgba(4,27,69,0.5); border:1px solid var(--border-soft); border-radius:18px; padding:10px; overflow:hidden; }
+  .map-wrap svg{ width:100%; height:auto; display:block; }
+  .legend{ display:flex; gap:14px; flex-wrap:wrap; font-size:11.5px; color:var(--ink-dim); margin-top:10px; }
+  .legend i{ display:inline-block; width:22px; height:0; border-top:3px solid; vertical-align:middle; margin-right:6px; border-radius:2px; }
+  .legend .dot{ display:inline-block; width:10px; height:10px; border-radius:50%; vertical-align:middle; margin-right:6px; }
+
+  /* ---------- theory ---------- */
+  .theory{ display:grid; grid-template-columns:auto 1fr; gap:16px; }
+  .theory .n{ font-family:var(--font-display); font-size:28px; font-weight:700; color:rgba(255,255,255,0.18); line-height:1; width:40px; }
+  .theory .cite{ font-family:var(--font-mono); font-size:11px; color:var(--teal-400); margin-bottom:6px; }
+  .theory p{ margin:0; font-size:13.5px; color:var(--ink-dim); }
+  .theory .apply{ margin-top:10px; font-size:12.5px; color:var(--ink); background:rgba(32,115,245,0.1); border:1px solid rgba(32,115,245,0.3); border-radius:10px; padding:9px 12px; }
+  .theory .apply b{ color:var(--blue-500); font-family:var(--font-mono); font-weight:500; font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; display:block; margin-bottom:3px; }
+  .refs{ font-size:12.5px; color:var(--ink-dim); line-height:1.6; }
+  .refs li{ margin-bottom:8px; padding-left:1.6em; text-indent:-1.6em; list-style:none; }
+  .refs ul{ padding:0; margin:0; }
+  .flow-strip{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .flow-strip .fs{ background:var(--glass); border:1px solid var(--border-soft); padding:9px 13px; border-radius:12px; font-size:12.5px; font-weight:600; color:#fff; }
+  .flow-strip .ar{ color:var(--teal-400); font-family:var(--font-mono); }
+  ol.steps{ padding-left:20px; margin:0; } ol.steps li{ margin-bottom:10px; font-size:13.5px; color:var(--ink-dim); line-height:1.6; } ol.steps li b{ color:#fff; }
+  .note{ font-size:12px; color:var(--ink-faint); line-height:1.5; }
+  .nav-row{ display:flex; justify-content:space-between; gap:10px; margin-top:26px; flex-wrap:wrap; }
+  .toast{ position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(20px); background:rgba(4,27,69,0.92); border:1px solid var(--teal-400); color:#fff; padding:11px 18px; border-radius:100px; font-size:13px; font-weight:600; opacity:0; transition:all .3s; z-index:60; pointer-events:none; }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .hero-q{ font-family:var(--font-display); font-size:clamp(17px,2vw,22px); color:#fff; font-weight:600; font-style:italic; line-height:1.4; margin:0; }
+  .mtx{ width:100%; border-collapse:separate; border-spacing:0; font-size:12.5px; }
+  .mtx th,.mtx td{ padding:8px 8px; border-bottom:1px solid var(--border-soft); text-align:left; vertical-align:top; }
+  .mtx th{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink-faint); font-weight:500; }
+  .mtx td.c{ color:#fff; font-weight:600; }
+  .mtx td .hint{ font-size:11.5px; color:var(--ink-faint); font-weight:400; margin-top:2px; }
+  .mtx select{ padding:7px 28px 7px 10px; font-size:12.5px; border-radius:9px; min-width:64px; }
+  .mtx tfoot td{ border-bottom:none; border-top:2px solid var(--border-strong); font-family:var(--font-display); font-size:18px; color:#fff; font-weight:700; }
+  .mtx-wrap{ overflow-x:auto; }
+  .alt-tabs{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+  .alt-tab{ display:inline-flex; align-items:center; gap:8px; background:var(--glass); border:1px solid var(--border-soft); color:var(--ink-dim); padding:9px 14px; border-radius:12px; font-size:12.5px; font-weight:600; transition:all .2s; }
+  .alt-tab .k{ font-family:var(--font-mono); width:22px; height:22px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; font-size:11px; background:rgba(255,255,255,0.08); color:#fff; }
+  .alt-tab.active{ background:rgba(32,115,245,0.2); border-color:var(--blue-500); color:#fff; }
+  .alt-tab.short .k{ background:var(--teal-400); color:#04193f; }
+  .dim{ padding:12px 14px; }
+  .dim .dn{ font-family:var(--font-mono); font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--teal-400); margin-bottom:5px; }
+  .dim .dv{ font-size:12.5px; color:var(--ink); line-height:1.5; }
+  .dim .dv .u{ color:var(--amber); font-style:italic; }
+  .timeline{ display:grid; grid-template-columns:auto 1fr; gap:12px 16px; }
+  .timeline .tm{ font-family:var(--font-mono); font-size:11px; color:var(--teal-400); padding-top:3px; white-space:nowrap; }
+  .timeline .tx{ font-size:13.5px; color:var(--ink); line-height:1.55; }
+  .seg button.on[data-v="apoyo"], .seg button.on[data-v="lista"], .seg button.on[data-v="solida"], .seg button.on[data-v="no_aplica"], .seg button.on[data-v="si"]{ background:rgba(27,218,181,0.18); box-shadow:inset 0 0 0 1px var(--teal-400); }
+  .seg button.on[data-v="neutral"], .seg button.on[data-v="parcial"], .seg button.on[data-v="media"], .seg button.on[data-v="bajo"]{ background:rgba(32,115,245,0.22); box-shadow:inset 0 0 0 1px var(--blue-500); }
+  .seg button.on[data-v="insuficiente"], .seg button.on[data-v="baja"]{ background:rgba(245,185,66,0.2); box-shadow:inset 0 0 0 1px var(--amber); }
+  .seg button.on[data-v="resistencia"], .seg button.on[data-v="no_lista"], .seg button.on[data-v="no_pertinente"], .seg button.on[data-v="alta"], .seg button.on[data-v="no"]{ background:rgba(255,107,107,0.2); box-shadow:inset 0 0 0 1px var(--coral); }
+
+  /* ---------- laboratorio de prompts ---------- */
+  .need{ cursor:pointer; transition:border-color .2s, background .2s; }
+  .need:hover{ border-color:var(--border-strong); }
+  .need.on{ border-color:var(--teal-400); background:rgba(27,218,181,0.08); }
+  .need h3{ font-size:14.5px; margin-bottom:4px; }
+  .need p{ margin:0; font-size:12.5px; color:var(--ink-dim); line-height:1.5; }
+  .need .who{ font-family:var(--font-mono); font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--teal-400); margin-bottom:6px; }
+  textarea.prompt{ min-height:150px; font-family:var(--font-mono); font-size:12.5px; line-height:1.6; }
+  textarea.result{ min-height:170px; }
+  .analyzer{ display:grid; grid-template-columns:auto 1fr; gap:14px; align-items:start; }
+  .analyzer .score{ font-family:var(--font-display); font-size:34px; font-weight:700; color:#fff; line-height:1; }
+  .analyzer .score small{ font-size:13px; color:var(--ink-faint); }
+  .comp{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+  .comp div{ font-family:var(--font-mono); font-size:10.5px; padding:6px 8px; border-radius:8px; border:1px solid var(--border-soft); color:var(--ink-faint); }
+  .comp div.on{ border-color:var(--teal-400); color:var(--teal-400); background:rgba(27,218,181,0.1); }
+  @media (max-width:760px){ .comp{ grid-template-columns:1fr 1fr; } .analyzer{ grid-template-columns:1fr; } }
+  .sugg{ font-size:12.5px; color:var(--ink-dim); margin-top:8px; line-height:1.55; }
+  .sugg b{ color:var(--amber); }
+  .rub{ display:grid; grid-template-columns:1.4fr auto; gap:10px; align-items:center; padding:10px 0; border-bottom:1px dashed var(--border-soft); }
+  .rub:last-child{ border-bottom:none; }
+  .rub .c{ font-size:13px; color:#fff; font-weight:600; } .rub .c small{ display:block; color:var(--ink-faint); font-weight:400; font-size:11.5px; margin-top:2px; }
+  .rub .seg button{ padding:6px 11px; }
+  .issue{ display:grid; grid-template-columns:auto 1fr; gap:12px; align-items:start; padding:10px 0; border-bottom:1px dashed var(--border-soft); }
+  .issue:last-child{ border-bottom:none; }
+  .issue .t{ font-size:13.5px; color:#fff; font-weight:600; }
+  .issue .org{ margin-top:6px; }
+  .side{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width:860px){ .side{ grid-template-columns:1fr; } }
+  .side .col{ background:rgba(4,27,69,0.45); border:1px solid var(--border-soft); border-radius:14px; padding:14px; }
+  .side .col .label{ margin-bottom:6px; }
+  .side pre{ white-space:pre-wrap; font-family:var(--font-mono); font-size:12px; line-height:1.6; color:var(--ink); margin:0; max-height:260px; overflow:auto; }
+  .side .col.v2{ border-color:rgba(27,218,181,0.35); }
+  .verif{ display:grid; grid-template-columns:1.4fr 1.2fr auto auto; gap:8px; align-items:start; padding:10px 0; border-bottom:1px dashed var(--border-soft); }
+  .verif:last-child{ border-bottom:none; }
+  .verif textarea{ min-height:52px; }
+  @media (max-width:860px){ .verif{ grid-template-columns:1fr; } }
+  .matrix{ width:100%; border-collapse:separate; border-spacing:0; font-size:12.5px; }
+  .matrix th,.matrix td{ padding:10px 10px; border-bottom:1px solid var(--border-soft); text-align:left; vertical-align:top; }
+  .matrix th{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink-faint); font-weight:500; }
+  .matrix td.e{ color:#fff; font-weight:600; white-space:nowrap; width:170px; }
+  .matrix td.v{ color:var(--ink); white-space:pre-wrap; line-height:1.55; }
+  .matrix td.v .none{ color:var(--amber); font-style:italic; }
+  .matrix td.v2{ background:rgba(27,218,181,0.04); }
+  .delta{ font-family:var(--font-mono); font-size:11px; padding:3px 8px; border-radius:100px; border:1px solid; display:inline-block; margin-left:6px; }
+  .delta.up{ color:var(--teal-400); border-color:rgba(27,218,181,0.5); } .delta.dn{ color:var(--coral); border-color:rgba(255,107,107,0.5); } .delta.eq{ color:var(--ink-faint); border-color:var(--border-soft); }
+  .seg button.on[data-v="4"], .seg button.on[data-v="confirmada"], .seg button.on[data-v="ajustes"], .seg button.on[data-v="prompt"]{ background:rgba(27,218,181,0.18); box-shadow:inset 0 0 0 1px var(--teal-400); }
+  .seg button.on[data-v="3"], .seg button.on[data-v="borrador"], .seg button.on[data-v="modelo"]{ background:rgba(32,115,245,0.22); box-shadow:inset 0 0 0 1px var(--blue-500); }
+  .seg button.on[data-v="2"], .seg button.on[data-v="noverif"], .seg button.on[data-v="tarea"]{ background:rgba(245,185,66,0.2); box-shadow:inset 0 0 0 1px var(--amber); }
+  .seg button.on[data-v="1"], .seg button.on[data-v="incorrecta"], .seg button.on[data-v="talcual"], .seg button.on[data-v="nousar"]{ background:rgba(255,107,107,0.2); box-shadow:inset 0 0 0 1px var(--coral); }
+  .pattern{ display:grid; grid-template-columns:auto 1fr; gap:12px; padding:10px 0; border-bottom:1px dashed var(--border-soft); font-size:13px; }
+  .pattern:last-child{ border-bottom:none; }
+  .pattern .k{ font-family:var(--font-mono); font-size:11px; color:var(--teal-400); padding-top:2px; width:120px; }
+  .pattern .ex{ color:var(--ink-faint); font-family:var(--font-mono); font-size:11.5px; margin-top:3px; }
+  .sr{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+</style>
+</head>
+<body>
+<div class="noise" aria-hidden="true"></div>
+<header class="topbar">
+  <div class="topbar-row">
+    <div class="brand">
+      <img src="data:image/png;base64,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" alt="BIU Broward International University">
+      <div class="divider"></div>
+      <span class="tag">VIA7012 · Semana 6 · Laboratorio de Prompts y Análisis Crítico · Formativa, 0 %</span>
+    </div>
+    <div class="top-actions">
+      <button class="pill-btn" id="btnReset" title="Borrar todo el trabajo y empezar de nuevo">Reiniciar</button>
+      <button class="pill-btn primary" id="btnDownloadTop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="6 11 12 17 18 11"/><path d="M4 21h16"/></svg>Informe</button>
+    </div>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-tab="0"><span class="n">01</span>Fundamento teórico<span class="done"></span></button>
+    <button class="tab" data-tab="1"><span class="n">02</span>Instrucciones<span class="done"></span></button>
+    <button class="tab" data-tab="2"><span class="n">03</span>Necesidad educativa<span class="done"></span></button>
+    <button class="tab" data-tab="3"><span class="n">04</span>Laboratorio<span class="done"></span></button>
+    <button class="tab" data-tab="4"><span class="n">05</span>Matriz de análisis<span class="done"></span></button>
+    <button class="tab" data-tab="5"><span class="n">06</span>Informe y evidencias<span class="done"></span></button>
+  </nav>
+</header>
+
+<main>
+<!-- ================= 01 FUNDAMENTO ================= -->
+<section class="panel active" data-panel="0">
+  <div class="eyebrow">VIA7012 · Semana 6 · IA generativa y evaluación crítica</div>
+  <h1 class="title">Evaluación Crítica de una Aplicación de IA Generativa y Registro de Prompts</h1>
+  <p class="lede">Un prompt es una instrucción, pero también una hipótesis: supone que la herramienta entenderá el propósito, el destinatario y los límites de lo que se le pide. Este laboratorio pide elegir una necesidad educativa concreta, escribir un primer prompt, evaluar con criterios lo que la herramienta devuelve, refinar, comparar, verificar y, al final, decidir qué partes del resultado exigen juicio humano. El producto es una <strong>Matriz de análisis</strong> que contrasta la versión inicial con la versión optimizada en siete elementos.</p>
+
+  <div class="card accent" style="margin-bottom:26px;">
+    <div class="label">Pregunta orientadora</div>
+    <p class="hero-q">"¿Qué le pedí exactamente a la herramienta, para quién, qué devolvió, qué de eso es verificable y qué sigue siendo una decisión mía?"</p>
+  </div>
+
+  <h2>Seis lentes para diseñar, juzgar y regular el uso de prompts</h2>
+  <div class="stack">
+    <div class="card theory"><div class="n">1</div><div>
+      <h3>El prompt como diseño de instrucción, no como pregunta</h3>
+      <div class="cite">White et al. (2023) · Liu et al. (2023)</div>
+      <p>Los modelos generativos producen texto condicionado por el contexto que reciben. White y colaboradores catalogan patrones reutilizables —asignar un rol, fijar el formato de salida, pedir pasos, exigir que el modelo pregunte antes de responder, declarar restricciones— y muestran que la calidad del resultado depende de cuánto de ese contexto se hace explícito. Un prompt educativo es un pequeño documento de diseño: propósito, destinatario, tarea, formato, criterios y límites.</p>
+      <div class="apply"><b>Fases 1, 2 y 3 · Propósito, usuario y prompt inicial</b>Antes de escribir, responde quién usará el resultado y para qué decisión. El laboratorio analiza la estructura del prompt y señala los componentes ausentes.</div>
+    </div></div>
+    <div class="card theory"><div class="n">2</div><div>
+      <h3>Lo que la herramienta devuelve es plausible, no necesariamente cierto</h3>
+      <div class="cite">Ji et al. (2023) · Bender, Gebru, McMillan-Major y Shmitchell (2021)</div>
+      <p>Los modelos de lenguaje optimizan la continuación probable de un texto, no su verdad. Ji y colaboradores documentan la "alucinación": contenido fluido y seguro que no se sostiene en ninguna fuente, especialmente en cifras, nombres, citas y normativa. Bender y colaboradores advierten que el texto generado reproduce los patrones —y los sesgos— de sus datos de entrenamiento. Por eso evaluar un resultado educativo exige criterios explícitos y verificación externa, no una impresión de calidad.</p>
+      <div class="apply"><b>Fases 4, 5 y 8 · Evaluar, identificar limitaciones, verificar</b>Califica con la rúbrica, distingue si el problema nació del prompt, del modelo o de la tarea, y registra qué verificaste y contra qué fuente.</div>
+    </div></div>
+    <div class="card theory"><div class="n">3</div><div>
+      <h3>Refinar es iterar con evidencia</h3>
+      <div class="cite">Mollick y Mollick (2023) · White et al. (2023)</div>
+      <p>Mollick y Mollick muestran que los prompts educativos útiles rara vez salen bien a la primera: se mejoran añadiendo contexto del grupo, ejemplos del nivel esperado, restricciones (extensión, vocabulario, lo que no debe incluir) y pidiendo que el modelo exponga su razonamiento o señale su incertidumbre. La comparación entre versiones es la evidencia de aprendizaje: qué cambió en el prompt y qué cambió, en consecuencia, en el resultado.</p>
+      <div class="apply"><b>Fases 6 y 7 · Refinar y comparar</b>Usa las técnicas de refinamiento como repertorio, no como lista de control. Compara con la misma rúbrica y explica la diferencia.</div>
+    </div></div>
+    <div class="card theory"><div class="n">4</div><div>
+      <h3>IA generativa en educación: oportunidades con condiciones</h3>
+      <div class="cite">Kasneci et al. (2023) · UNESCO (2023)</div>
+      <p>Kasneci y colaboradores sitúan el potencial de los modelos de lenguaje en la creación de materiales, la retroalimentación y la personalización, pero lo condicionan a la competencia de quien los usa para evaluar, a la protección de datos y a que el estudiante siga pensando. La guía de UNESCO pide validación humana de los contenidos, transparencia sobre el uso y exclusión de datos personales de estudiantes en los prompts.</p>
+      <div class="apply"><b>Toda la secuencia</b>No incluyas datos identificables de estudiantes. Lo que pegues en el laboratorio es evidencia de tu proceso, no material para el aula hasta que lo revises.</div>
+    </div></div>
+    <div class="card theory"><div class="n">5</div><div>
+      <h3>El juicio humano no es la última fase: es el marco</h3>
+      <div class="cite">Molenaar (2022) · Holmes, Bialik y Fadel (2019)</div>
+      <p>Molenaar describe la relación entre docente e IA como control compartido, graduado según la tarea y sus consecuencias. Decidir si un material es adecuado para este grupo, si una retroalimentación es justa, si una explicación simplifica demasiado o si un ejemplo es culturalmente pertinente son juicios que el modelo no puede hacer porque no conoce el aula. Nombrar esas partes es el producto más importante del laboratorio.</p>
+      <div class="apply"><b>Fase 9 · Juicio y revisión humana</b>Marca qué partes del resultado revisarías siempre y decide cómo usarías el resultado: tal cual, con ajustes, como borrador o no usarlo.</div>
+    </div></div>
+    <div class="card theory"><div class="n">6</div><div>
+      <h3>De juzgar un resultado a fijar reglas que otros puedan aplicar</h3>
+      <div class="cite">UNESCO (2023) · Syllabus VIA7012, Semana 6</div>
+      <p>Evaluar una respuesta es un juicio sobre un caso. Un criterio institucional es una regla que otras personas pueden aplicar y comprobar. La última fase pide pasar de lo primero a lo segundo: decir para qué usos es apropiada la herramienta, en qué situaciones no la recomendarías y qué tres criterios exigiría una institución antes de permitir su uso. Un criterio útil nombra quién responde, qué se revisa y cómo se comprueba.</p>
+      <div class="apply"><b>Fase 10 · Uso responsable</b>Parte de lo que verificaste y de lo que no pudiste verificar. Un criterio que no se puede comprobar no sirve como criterio.</div>
+    </div></div>
+  </div>
+
+  <h2 style="margin-top:28px;">Componentes de un prompt educativo</h2>
+  <div class="card" style="margin-bottom:22px;" id="patterns"></div>
+
+  <h2>Referencias de la carpeta</h2>
+  <div class="card refs"><ul id="refsList"></ul></div>
+  <div class="nav-row"><span></span><button class="pill-btn primary goto" data-goto="1">Instrucciones →</button></div>
+</section>
+
+<!-- ================= 02 INSTRUCCIONES ================= -->
+<section class="panel" data-panel="1">
+  <div class="eyebrow">Instrucciones de uso</div>
+  <h1 class="title">Cómo se recorre el laboratorio</h1>
+  <p class="lede">Trabajarás con una herramienta de IA generativa de tu elección (ChatGPT, Claude, Gemini, Copilot u otra) en una ventana aparte. El laboratorio no genera texto: estructura tu proceso, analiza la composición de tus prompts, te da una rúbrica para evaluar los resultados y arma automáticamente la Matriz de análisis con lo que registres.</p>
+  <div class="grid g2" style="margin-bottom:18px;">
+    <div class="card">
+      <div class="label">Las diez fases</div>
+      <div class="flow-strip"><span class="fs">1 Propósito</span><span class="ar">→</span><span class="fs">2 Usuario</span><span class="ar">→</span><span class="fs">3 Prompt inicial</span><span class="ar">→</span><span class="fs">4 Calidad</span><span class="ar">→</span><span class="fs">5 Limitaciones</span><span class="ar">→</span><span class="fs">6 Refinar</span><span class="ar">→</span><span class="fs">7 Comparar</span><span class="ar">→</span><span class="fs">8 Verificar</span><span class="ar">→</span><span class="fs">9 Juicio humano</span><span class="ar">→</span><span class="fs">10 Uso responsable</span></div>
+    </div>
+    <div class="card accent">
+      <div class="label">Lo que el laboratorio no hace</div>
+      <p style="margin:0; font-size:13.5px; color:var(--ink);">No evalúa si tu resultado es "bueno": eso lo haces tú con la rúbrica y lo justificas. El analizador de prompts solo revisa la <strong>estructura</strong> (qué componentes están presentes); un prompt completo puede dar un mal resultado y uno breve, uno excelente. La evidencia es tu razonamiento al comparar.</p>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:18px;">
+    <div class="label">Pasos</div>
+    <ol class="steps">
+      <li><b>Lee el fundamento</b> (01) y los componentes de un prompt educativo.</li>
+      <li><b>Elige o define la necesidad educativa</b> (03): una del banco o una propia, concreta y acotada.</li>
+      <li><b>Recorre las diez fases</b> (04). En las fases 3 y 6 pegarás el prompt exacto que usaste y el resultado completo que obtuviste; en las fases 4 y 7 aplicarás la misma rúbrica a cada versión.</li>
+      <li><b>Revisa la Matriz de análisis</b> (05): se construye sola con tus registros y muestra la diferencia entre versiones.</li>
+      <li><b>Descarga el informe</b> (06) con la matriz, los prompts, los resultados, la verificación y las referencias.</li>
+    </ol>
+  </div>
+  <div class="card" style="margin-bottom:18px;">
+    <div class="label">Correspondencia con el Syllabus (Semana 6)</div>
+    <div class="mtx-wrap"><table class="mtx"><caption class="sr">Correspondencia entre los pasos de la asignación del Syllabus y las fases del laboratorio</caption><thead><tr><th scope="col">Paso de la asignación</th><th scope="col">Dónde se hace en este laboratorio</th></tr></thead><tbody>
+      <tr><td>1. Definir el propósito educativo de la interacción</td><td>Fases 1 y 2 · Propósito y usuario</td></tr>
+      <tr><td>2. Diseñar un prompt inicial</td><td>Fase 3 · Prompt inicial</td></tr>
+      <tr><td>3. Refinar el prompt después de analizar la primera respuesta</td><td>Fases 4 a 6 · Calidad, limitaciones y refinamiento</td></tr>
+      <tr><td>4. Documentar al menos dos iteraciones</td><td>Fases 3 y 6: prompt inicial y prompt optimizado, con resultados completos en el informe</td></tr>
+      <tr><td>5. Evaluar con los nueve criterios (precisión, pertinencia, claridad, evidencia, sesgo, privacidad, transparencia, riesgo de alucinación, necesidad de supervisión humana)</td><td>Fases 4 y 7 · La misma rúbrica aplicada a cada versión; fase 8 para verificar</td></tr>
+      <tr><td>6. Explicar qué tipo de uso considera apropiado</td><td>Fase 10 · Uso responsable</td></tr>
+      <tr><td>7. Situaciones en que no recomendaría usar la herramienta</td><td>Fase 10 · Uso responsable</td></tr>
+      <tr><td>8. Tres criterios institucionales para un uso responsable</td><td>Fase 10 · Uso responsable</td></tr>
+    </tbody></table></div>
+    <p class="muted" style="margin:12px 0 0; font-size:13px;">Resultados de aprendizaje que ejercita: SLO 6.3 en las fases 2, 3 y 6; SLO 6.4 en las fases 4, 5, 7 y 8; SLO 6.5 en las fases 9 y 10; SLO 6.2 en la elección de la necesidad. SLO 6.1 (fundamentos de NLP y LLMs) se trabaja en las lecturas de la semana, no aquí. La alineación SLO–CLO–PLO oficial está en el Syllabus.</p>
+  </div>
+  <div class="grid g3">
+    <div class="card tight"><div class="label">Guardado</div><p style="margin:0; font-size:13px; color:var(--ink);">El avance se guarda en este navegador. "Reiniciar" borra todo tras confirmar.</p></div>
+    <div class="card tight"><div class="label">Duración estimada</div><p style="margin:0; font-size:13px; color:var(--ink);">120 a 150 minutos con la herramienta abierta (estimación del diseño, no medida con estudiantes); puede hacerse en varias sesiones.</p></div>
+    <div class="card tight"><div class="label">Uso de IA</div><p style="margin:0; font-size:13px; color:var(--ink);">Esta actividad usa IA generativa porque la asignación lo pide. El análisis, la evaluación y los criterios los escribes tú, sin IA. Declara la herramienta, el modelo y las fechas en la fase 3 y en el informe.</p></div>
+    <div class="card tight warn"><div class="label">Datos personales</div><p style="margin:0; font-size:13px; color:var(--ink);">No incluyas nombres, calificaciones ni descripciones identificables de estudiantes reales en ningún prompt.</p></div>
+  </div>
+  <div class="nav-row"><button class="pill-btn goto" data-goto="0">← Fundamento</button><button class="pill-btn primary goto" data-goto="2">Elegir la necesidad →</button></div>
+</section>
+
+<!-- ================= 03 NECESIDAD ================= -->
+<section class="panel" data-panel="2">
+  <div class="eyebrow">Necesidad educativa</div>
+  <h1 class="title">Una necesidad concreta, acotada y tuya</h1>
+  <p class="lede">Elige una necesidad del banco o define la tuya. Cuanto más concreta —nivel, asignatura, grupo, situación—, más podrás juzgar si el resultado sirve. "Mejorar la motivación" no es una necesidad trabajable; "diseñar tres preguntas de apertura para una clase de fracciones en cuarto grado con estudiantes que confunden numerador y denominador" sí.</p>
+  <div class="grid g2" style="margin-bottom:18px;" id="needBank"></div>
+  <div class="card" style="margin-bottom:14px;">
+    <div class="label">Tu necesidad (puedes editar la que elegiste del banco)</div>
+    <div class="grid g2" style="gap:12px;">
+      <div class="field"><span class="fl">Título breve</span><input type="text" data-path="need.title" placeholder="Ej.: Preguntas de apertura sobre fracciones"></div>
+      <div class="field"><span class="fl">Nivel, asignatura y contexto</span><input type="text" data-path="need.ctx" placeholder="Ej.: 4.º grado, matemáticas, grupo de 28, escuela pública urbana"></div>
+    </div>
+    <div class="field" style="margin-top:12px;"><span class="fl">Descripción de la situación que requiere apoyo</span><textarea data-path="need.desc" placeholder="Qué pasa, con quién, qué se ha intentado, qué resultado se espera del apoyo de la IA."></textarea></div>
+  </div>
+  <div class="nav-row"><button class="pill-btn goto" data-goto="1">← Instrucciones</button><button class="pill-btn primary goto" data-goto="3">Ir al laboratorio →</button></div>
+</section>
+
+<!-- ================= 04 LABORATORIO ================= -->
+<section class="panel" data-panel="3">
+  <div class="eyebrow">Laboratorio</div>
+  <h1 class="title">Diez fases, dos versiones</h1>
+  <div class="stepper" id="stepper"></div>
+  <div id="labBody"></div>
+</section>
+
+<!-- ================= 05 MATRIZ ================= -->
+<section class="panel" data-panel="4">
+  <div class="eyebrow">Matriz de análisis</div>
+  <h1 class="title">Versión inicial frente a versión optimizada</h1>
+  <p class="lede">La matriz se construye con lo que registraste en las diez fases. Las celdas vacías señalan fases pendientes. La columna optimizada no es "mejor" por definición: la rúbrica y tu comparación dicen si lo fue.</p>
+  <div class="grid g3" style="margin-bottom:22px;" id="kpis"></div>
+  <div class="card" style="margin-bottom:22px;"><div class="mtx-wrap"><table class="matrix" id="matrix"></table></div></div>
+  <div class="card" style="margin-bottom:22px;"><div class="label">Estructura de los prompts</div><div class="side" id="promptCompare"></div></div>
+  <div class="card"><div class="label">Rúbrica · versión inicial frente a optimizada</div><div id="rubricCompare"></div></div>
+  <div class="nav-row"><button class="pill-btn goto" data-goto="3">← Laboratorio</button><button class="pill-btn primary goto" data-goto="5">Preparar el informe →</button></div>
+</section>
+
+<!-- ================= 06 INFORME ================= -->
+<section class="panel" data-panel="5">
+  <div class="eyebrow">Informe y evidencias</div>
+  <h1 class="title">Descarga el Informe del Laboratorio de Prompts</h1>
+  <p class="lede">El archivo reúne la necesidad educativa, la declaración de uso de IA, el uso responsable (apropiado, no recomendado y tres criterios institucionales), la Matriz de análisis, ambos prompts con sus resultados completos, la rúbrica de cada versión, el registro de verificación, las partes que requieren juicio humano, tu reflexión y las referencias de la carpeta.</p>
+  <div class="grid g2" style="margin-bottom:18px;">
+    <div class="card"><div class="grid" style="gap:12px;">
+      <div class="field"><span class="fl">Nombre del doctorando</span><input type="text" data-ref="nombre" placeholder="Nombre y apellido"></div>
+      <div class="field"><span class="fl">Programa / cohorte (opcional)</span><input type="text" data-ref="programa" placeholder="Ej.: Doctorado en Educación Virtual — cohorte ..."></div>
+      <div class="field"><span class="fl">Declaración de uso de IA (obligatoria): herramienta(s), modelo y fechas; qué partes del informe escribiste sin IA; qué corregiste o descartaste de lo que devolvió</span><textarea data-ref="iaDecl" placeholder="Ej.: Usé Claude (Sonnet) el 12/10 para generar los resultados analizados. El análisis, la rúbrica y los criterios institucionales son míos."></textarea></div>
+      <div class="field"><span class="fl">Reflexión final · qué aprendiste sobre pedir, evaluar y decidir con IA generativa</span><textarea data-ref="reflexion" placeholder="Cuatro a ocho líneas."></textarea></div>
+    </div></div>
+    <div class="card"><div class="label">Estado del informe</div><div id="checklist" style="font-size:13.5px; line-height:1.9;"></div></div>
+  </div>
+  <div class="row">
+    <button class="pill-btn primary" id="btnDownload" style="padding:13px 22px; font-size:14px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="6 11 12 17 18 11"/><path d="M4 21h16"/></svg>Descargar informe (.html)</button>
+    <span class="note">Cada descarga refleja el estado actual de tu trabajo.</span>
+  </div>
+  <div class="nav-row"><button class="pill-btn goto" data-goto="4">← Matriz</button><span></span></div>
+</section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+var STORE_KEY='via7012_s6_lab_prompts_v1';
+
+/* ================= DATA ================= */
+var PATTERNS=[
+ {k:'Rol',d:'Quién debe "ser" la herramienta y con qué experiencia.',ex:'Actúa como docente de ciencias de secundaria con experiencia en evaluación formativa.'},
+ {k:'Contexto',d:'Nivel, asignatura, características del grupo, lo que ya se hizo.',ex:'Grupo de 2.º de secundaria, 30 estudiantes, la mitad con dificultades de lectura; ya vimos el ciclo del agua.'},
+ {k:'Tarea',d:'Un verbo preciso y un producto definido.',ex:'Diseña cuatro preguntas de comprensión de dificultad creciente...'},
+ {k:'Destinatario',d:'Quién usará el resultado y qué hará con él.',ex:'...para que el docente las use como apertura de clase.'},
+ {k:'Formato',d:'Estructura, extensión, lenguaje, idioma.',ex:'En una tabla con columnas pregunta / nivel / respuesta esperada; máximo 120 palabras por fila; español neutro.'},
+ {k:'Restricciones',d:'Qué no debe hacer; criterios que debe cumplir.',ex:'No uses términos técnicos sin definirlos; evita ejemplos que requieran conocimientos no vistos.'},
+ {k:'Ejemplos',d:'Una muestra del nivel o estilo esperado.',ex:'Ejemplo del nivel esperado: "¿Qué pasaría con la lluvia si no existiera la evaporación?"'},
+ {k:'Verificación',d:'Pedir fuentes, incertidumbre o pasos.',ex:'Si no estás seguro de un dato, indícalo; no inventes referencias; explica brevemente por qué cada pregunta es más difícil que la anterior.'}
+];
+var COMP=[
+ {id:'rol',k:'Rol',re:/(act[uú]a como|eres (un|una|el|la)|asume el rol|como (docente|profesor|tutor|experto|especialista|dise[ñn]ador)|en tu rol de)/i},
+ {id:'contexto',k:'Contexto',re:/(grado|curso|nivel|primaria|secundaria|universit|a[ñn]o de|estudiantes (de|con|que)|grupo de|asignatura|materia|cohorte|clase de|mis estudiantes|contexto)/i},
+ {id:'tarea',k:'Tarea',re:/\b(dise[ñn]a|redacta|escribe|elabora|genera|crea|propón|propon|explica|resume|evalúa|evalua|analiza|compara|clasifica|sugiere|planifica|adapta|traduce|formula|construye|lista|enumera|describe)\b/i},
+ {id:'destinatario',k:'Destinatario',re:/(para (que )?(el|la|los|las|un|una)? ?(docente|estudiante|alumn|familia|padres|coordinaci|tutor|equipo)|dirigid[oa] a|destinatari|quien lo usar|lo usar[áa])/i},
+ {id:'formato',k:'Formato',re:/(formato|tabla|lista|viñetas|vinetas|columnas|m[áa]ximo|m[íi]nimo|palabras|p[áa]rrafos|oraciones|secciones|encabezados|numerad|json|markdown|en espa[ñn]ol|en ingl[ée]s|tono|lenguaje (sencillo|formal|claro))/i},
+ {id:'restricciones',k:'Restricciones',re:/(\bno (uses|incluyas|menciones|inventes|agregues|utilices|des|hagas)\b|evita|sin (usar|incluir)|debe[sn]? |deber[áa]|solo |únicamente|unicamente|criterio|requisito|restricci|l[íi]mite)/i},
+ {id:'ejemplos',k:'Ejemplos',re:/(por ejemplo|ejemplo:|ejemplos?\b|como este|similar a|al estilo de|muestra:)/i},
+ {id:'verificacion',k:'Verificación',re:/(fuente|cita|referencia|no est[áa]s segur|incertidumbre|indica si|se[ñn]ala si|justifica|explica por qu[ée]|paso a paso|razonamiento|antes de responder|pregúntame|preguntame|haz preguntas)/i}
+];
+var NEEDS=[
+ {t:'Preguntas de apertura con diagnóstico de errores',who:'Para el docente',ctx:'4.º grado · matemáticas · 28 estudiantes',d:'Diseñar preguntas de apertura sobre fracciones que hagan visibles las confusiones entre numerador y denominador, con respuestas esperadas.'},
+ {t:'Retroalimentación formativa a un texto estudiantil',who:'Para el estudiante',ctx:'1.º de bachillerato · lengua · ensayo argumentativo',d:'Obtener comentarios sobre estructura argumentativa de un ensayo anonimizado, en tono constructivo y con dos sugerencias concretas de mejora.'},
+ {t:'Adaptación de una lectura a dos niveles',who:'Para estudiantes con distinta competencia lectora',ctx:'6.º grado · ciencias · texto sobre ecosistemas',d:'Reescribir un texto informativo en dos versiones (lector en desarrollo y lector avanzado) manteniendo los conceptos clave.'},
+ {t:'Rúbrica para un proyecto interdisciplinario',who:'Para el equipo docente',ctx:'Secundaria · proyecto de ciencias sociales y arte',d:'Elaborar una rúbrica de cuatro niveles con criterios observables para un proyecto que combina investigación histórica y producción visual.'},
+ {t:'Explicación alternativa de un concepto difícil',who:'Para estudiantes que no comprendieron la primera explicación',ctx:'Universidad · estadística introductoria · valor p',d:'Generar dos explicaciones alternativas del valor p con analogías del contexto de los estudiantes y señalar los malentendidos frecuentes.'},
+ {t:'Mensaje a familias sobre un cambio de evaluación',who:'Para las familias',ctx:'Primaria · coordinación académica',d:'Redactar una comunicación clara sobre el paso a evaluación por competencias, anticipando preguntas frecuentes, en lenguaje accesible.'},
+ {t:'Secuencia didáctica breve con evaluación formativa',who:'Para el docente',ctx:'3.º de secundaria · historia · 2 sesiones',d:'Planificar dos sesiones sobre causas de una revolución, con actividad de apertura, desarrollo, cierre y una pregunta de salida por sesión.'},
+ {t:'Casos para discusión ética en formación profesional',who:'Para estudiantes de posgrado',ctx:'Maestría · ética profesional · seminario',d:'Crear tres casos breves y verosímiles sobre dilemas de uso de IA en la docencia, con preguntas guía que no induzcan una respuesta.'}
+];
+var SUPPORT={materiales:'Diseñar materiales o actividades',retro:'Dar retroalimentación',explicar:'Explicar o reexplicar un concepto',evaluar:'Evaluar o construir instrumentos',planificar:'Planificar clases o secuencias',diferenciar:'Diferenciar o adaptar para la diversidad',comunicar:'Comunicar con familias o colegas'};
+var USERS={docente:'El docente',estudiante:'El estudiante',familia:'Las familias',equipo:'El equipo docente o coordinación',yo:'El propio doctorando'};
+var TOOLS=['ChatGPT','Claude','Gemini','Copilot','Otra'];
+var RUB=[
+ {id:'prec',k:'Precisión',d:'Sin errores conceptuales, cifras equivocadas ni afirmaciones incorrectas.'},
+ {id:'pert',k:'Pertinencia',d:'Responde al propósito y al usuario de la necesidad, no a algo parecido.'},
+ {id:'clar',k:'Claridad',d:'Se entiende y se puede usar sin reordenarlo.'},
+ {id:'evid',k:'Evidencia',d:'Las afirmaciones se apoyan en fuentes que puedes comprobar.'},
+ {id:'sesg',k:'Sesgo',d:'Sin estereotipos, generalizaciones ni ejemplos excluyentes. 4 = ninguno detectado.'},
+ {id:'priv',k:'Privacidad',d:'No pide ni expone datos personales y trata con cuidado lo sensible.'},
+ {id:'transp',k:'Transparencia',d:'Declara sus límites o su incertidumbre y no aparenta más certeza de la que tiene.'},
+ {id:'aluc',k:'Riesgo de alucinación',d:'4 = tras verificar, no se detectó contenido inventado; 1 = contiene datos, citas o hechos inventados.'},
+ {id:'sup',k:'Necesidad de supervisión humana',d:'4 = requiere solo revisión puntual; 1 = no es usable sin revisión experta de todo el resultado.'}
+];
+var SCALE={1:'1',2:'2',3:'3',4:'4'};
+var ISSUES=[
+ {id:'inv',t:'Inventó datos, cifras, nombres o referencias'},
+ {id:'gen',t:'Resultado genérico: serviría para cualquier grupo'},
+ {id:'niv',t:'Nivel o lenguaje inadecuado para el destinatario'},
+ {id:'ign',t:'Ignoró una restricción o parte de la tarea'},
+ {id:'ses',t:'Sesgo, estereotipo o ejemplo excluyente'},
+ {id:'ton',t:'Tono inadecuado para el uso previsto'},
+ {id:'ext',t:'Extensión o formato distintos de lo pedido'},
+ {id:'amb',t:'Ambigüedad: interpretó el prompt de otra forma'},
+ {id:'ped',t:'Error pedagógico: la actividad no logra lo que pretende'}
+];
+var ORIGIN={prompt:'Del prompt',modelo:'Del modelo',tarea:'De la tarea'};
+var TECH={rol:'Añadir o precisar el rol',ctx:'Añadir contexto del grupo',fmt:'Especificar formato y extensión',ej:'Dar un ejemplo del nivel esperado',res:'Declarar restricciones',pasos:'Pedir pasos o razonamiento',verif:'Pedir que señale incertidumbre o fuentes',sub:'Dividir en subtareas',alt:'Pedir alternativas para elegir',preg:'Pedir que pregunte antes de responder'};
+var VSTATUS={confirmada:'Confirmada',incorrecta:'Incorrecta',noverif:'No verificable'};
+var HUMAN={h1:'Adecuación pedagógica al grupo real',h2:'Exactitud disciplinar',h3:'Pertinencia cultural y lingüística',h4:'Equidad y accesibilidad',h5:'Datos personales y privacidad',h6:'Alineación con el currículo y la evaluación',h7:'Tono y relación con estudiantes o familias',h8:'Decisión final sobre calificaciones o consecuencias'};
+var USE={talcual:'Tal cual',ajustes:'Con ajustes puntuales',borrador:'Solo como borrador',nousar:'No lo usaría'};
+var REFS=[
+ 'Bender, E. M., Gebru, T., McMillan-Major, A., y Shmitchell, S. (2021). On the dangers of stochastic parrots: Can language models be too big? <em>Proceedings of the 2021 ACM Conference on Fairness, Accountability, and Transparency</em>, 610–623. https://doi.org/10.1145/3442188.3445922',
+ 'Holmes, W., Bialik, M., y Fadel, C. (2019). <em>Artificial intelligence in education: Promises and implications for teaching and learning.</em> Center for Curriculum Redesign.',
+ 'Ji, Z., Lee, N., Frieske, R., Yu, T., Su, D., Xu, Y., Ishii, E., Bang, Y. J., Madotto, A., y Fung, P. (2023). Survey of hallucination in natural language generation. <em>ACM Computing Surveys, 55</em>(12), 1–38. https://doi.org/10.1145/3571730',
+ 'Kasneci, E., Sessler, K., Küchemann, S., Bannert, M., Dementieva, D., Fischer, F., Gasser, U., Groh, G., Günnemann, S., Hüllermeier, E., Krusche, S., Kutyniok, G., Michaeli, T., Nerdel, C., Pfeffer, J., Poquet, O., Sailer, M., Schmidt, A., Seidel, T., … Kasneci, G. (2023). ChatGPT for good? On opportunities and challenges of large language models for education. <em>Learning and Individual Differences, 103</em>, 102274. https://doi.org/10.1016/j.lindif.2023.102274',
+ 'Liu, P., Yuan, W., Fu, J., Jiang, Z., Hayashi, H., y Neubig, G. (2023). Pre-train, prompt, and predict: A systematic survey of prompting methods in natural language processing. <em>ACM Computing Surveys, 55</em>(9), 1–35. https://doi.org/10.1145/3560815',
+ 'Molenaar, I. (2022). Towards hybrid human-AI learning technologies. <em>European Journal of Education, 57</em>(4), 632–645. https://doi.org/10.1111/ejed.12527',
+ 'Mollick, E., y Mollick, L. (2023). <em>Assigning AI: Seven approaches for students, with prompts.</em> SSRN.',
+ 'UNESCO. (2023). <em>Guidance for generative AI in education and research.</em> UNESCO.',
+ 'White, J., Fu, Q., Hays, S., Sandborn, M., Olea, C., Gilbert, H., Elnashar, A., Spencer-Smith, J., y Schmidt, D. C. (2023). <em>A prompt pattern catalog to enhance prompt engineering with ChatGPT.</em> arXiv. https://doi.org/10.48550/arXiv.2302.11382'
+];
+
+/* ================= STATE ================= */
+var S;
+function freshState(){ return {phase:0,need:{bank:null,title:'',ctx:'',desc:''},p1:{purpose:'',support:null,criteria:''},p2:{user:null,traits:'',use:''},p3:{tool:'ChatGPT',ver:'',date:'',prompt:'',expected:'',result:'',nopd:false},p4:{rub:{},evidence:'',verify:''},p5:{issues:{},origin:{},note:'',human:''},p6:{tech:[],purpose:'',prompt:'',expected:'',result:''},p7:{rub:{},changed:'',remaining:''},p8:{items:[{claim:'',how:'',status:null}],note:''},p9:{parts:[],decides:'',use:null},p10:{fit:'',nofit:'',c1:'',c2:'',c3:''},refl:{nombre:'',programa:'',reflexion:'',iaDecl:''}}; }
+function mergeInto(a,b){ Object.keys(b||{}).forEach(function(k){ if(a[k]&&typeof a[k]==='object'&&!Array.isArray(a[k])&&b[k]&&typeof b[k]==='object'&&!Array.isArray(b[k])) mergeInto(a[k],b[k]); else if(b[k]!==undefined) a[k]=b[k]; }); }
+function load(){ S=freshState(); try{ var raw=window.localStorage.getItem(STORE_KEY); if(raw){ mergeInto(S,JSON.parse(raw)); if(!Array.isArray(S.p8.items)||!S.p8.items.length) S.p8.items=[{claim:'',how:'',status:null}]; } }catch(e){} }
+function save(){ try{ window.localStorage.setItem(STORE_KEY,JSON.stringify(S)); }catch(e){} }
+
+/* ================= HELPERS ================= */
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function $(sel,ctx){ return (ctx||document).querySelector(sel); }
+function $$(sel,ctx){ return Array.prototype.slice.call((ctx||document).querySelectorAll(sel)); }
+function toast(msg){ var t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(function(){ t.classList.remove('show'); },2400); }
+function getPath(p){ return p.split('.').reduce(function(o,k){ return o==null?undefined:o[k]; },S); }
+function setPath(p,v){ var ks=p.split('.'),o=S; for(var i=0;i<ks.length-1;i++){ if(o[ks[i]]==null) o[ks[i]]={}; o=o[ks[i]]; } o[ks[ks.length-1]]=v; }
+function seg(path,dict,cur){ var h='<div class="seg" data-path="'+path+'">'; Object.keys(dict).forEach(function(o){ h+='<button type="button" data-v="'+o+'" class="'+(String(cur)===o?'on':'')+'">'+esc(dict[o])+'</button>'; }); return h+'</div>'; }
+function chips(path,dict,cur){ var h='<div class="tag-group">'; Object.keys(dict).forEach(function(o){ h+='<button type="button" class="chip pick'+(cur.indexOf(o)>=0?' on':'')+'" data-path="'+path+'" data-v="'+o+'">'+esc(dict[o])+'</button>'; }); return h+'</div>'; }
+function ta(path,label,ph,cls){ return '<div class="field"><span class="fl">'+esc(label)+'</span><textarea class="'+(cls||'')+'" data-path="'+path+'" placeholder="'+esc(ph||'')+'">'+esc(getPath(path)||'')+'</textarea></div>'; }
+function none(v){ return v&&String(v).trim()?esc(v):'<span class="none">pendiente</span>'; }
+function dl(name,content,type){ var blob=new Blob([content],{type:type||'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(function(){ URL.revokeObjectURL(url); },1500); }
+
+/* ================= ANALYZER ================= */
+function analyze(text){ var t=text||'',found=COMP.map(function(c){ return {id:c.id,k:c.k,on:c.re.test(t)}; }),n=found.filter(function(f){return f.on;}).length,words=t.trim()?t.trim().split(/\s+/).length:0,sugg=[]; if(!t.trim()) return {found:found,n:0,words:0,sugg:['Escribe el prompt exacto que usaste.']}; found.filter(function(f){return !f.on;}).forEach(function(f){ var p=PATTERNS.filter(function(x){return x.k===f.k;})[0]; sugg.push('<b>'+f.k+'</b>: '+p.d); }); if(words<15) sugg.push('<b>Extensión</b>: con menos de 15 palabras la herramienta rellena el contexto con supuestos propios.'); if(/\b(alumno|alumna|estudiante)s?\b.*\b[A-ZÁÉÍÓÚ][a-záéíóú]+ [A-ZÁÉÍÓÚ][a-záéíóú]+\b/.test(t)) sugg.push('<b>Privacidad</b>: parece haber un nombre propio junto a "estudiante"; revisa que no sea un dato identificable.'); return {found:found,n:n,words:words,sugg:sugg}; }
+function analyzerHTML(text){ var a=analyze(text); return '<div class="analyzer"><div><div class="score">'+a.n+'<small> / 8</small></div><div class="note">componentes<br>'+a.words+' palabras</div></div><div><div class="comp">'+a.found.map(function(f){ return '<div class="'+(f.on?'on':'')+'">'+(f.on?'● ':'○ ')+esc(f.k)+'</div>'; }).join('')+'</div>'+(a.sugg.length?'<div class="sugg">'+a.sugg.slice(0,4).join('<br>')+'</div>':'<div class="sugg" style="color:var(--teal-400);">Estructura completa. Recuerda: la estructura no garantiza la calidad del resultado.</div>')+'</div></div>'; }
+function rubAvg(r){ var v=RUB.map(function(c){return +r[c.id]||0;}).filter(function(x){return x>0;}); return v.length?Math.round(v.reduce(function(a,b){return a+b;},0)/v.length*10)/10:null; }
+
+/* ================= RENDER: NECESIDAD ================= */
+function renderNeeds(){ $('#needBank').innerHTML=NEEDS.map(function(n,i){ return '<div class="card need'+(S.need.bank===i?' on':'')+'" data-need="'+i+'"><div class="who">'+esc(n.who)+' · '+esc(n.ctx)+'</div><h3>'+esc(n.t)+'</h3><p>'+esc(n.d)+'</p></div>'; }).join(''); $$('#needBank').forEach(function(){}); ['need.title','need.ctx','need.desc'].forEach(function(p){ var el=$('[data-path="'+p+'"]'); if(el) el.value=getPath(p)||''; }); }
+
+/* ================= RENDER: LAB ================= */
+var PH=['Propósito','Usuario','Prompt inicial','Calidad','Limitaciones','Refinar','Comparar','Verificar','Juicio humano','Uso responsable'];
+function phaseDone(i){ var s=S; switch(i){ case 0: return !!(s.p1.purpose.trim()&&s.p1.support); case 1: return !!(s.p2.user&&s.p2.use.trim()); case 2: return !!(s.p3.prompt.trim()&&s.p3.result.trim()&&s.p3.nopd&&s.p3.ver.trim()&&s.p3.date); case 3: return RUB.every(function(c){return s.p4.rub[c.id];})&&!!s.p4.evidence.trim(); case 4: return Object.keys(s.p5.issues).some(function(k){return s.p5.issues[k];})&&!!s.p5.note.trim(); case 5: return !!(s.p6.prompt.trim()&&s.p6.result.trim()&&s.p6.tech.length); case 6: return RUB.every(function(c){return s.p7.rub[c.id];})&&!!s.p7.changed.trim(); case 7: return s.p8.items.some(function(it){return it.claim.trim()&&it.status;}); case 8: return !!(s.p9.parts.length&&s.p9.decides.trim()&&s.p9.use); case 9: return ['fit','nofit','c1','c2','c3'].every(function(k){return s.p10[k].trim().length>=10;}); } return false; }
+function renderStepper(){ $('#stepper').innerHTML=PH.map(function(n,i){ return '<button type="button" class="step'+(S.phase===i?' active':'')+(phaseDone(i)?' done':'')+'" data-phase="'+i+'"><span class="num">'+(i+1)+'</span>'+n+'</button>'; }).join(''); }
+function nav(i){ return '<div class="nav-row">'+(i>0?'<button class="pill-btn gophase" data-gophase="'+(i-1)+'">← '+PH[i-1]+'</button>':'<button class="pill-btn goto" data-goto="2">← Necesidad</button>')+(i<PH.length-1?'<button class="pill-btn primary gophase" data-gophase="'+(i+1)+'">'+PH[i+1]+' →</button>':'<button class="pill-btn primary goto" data-goto="4">Ver la Matriz de análisis →</button>')+'</div>'; }
+function rubric(path,cur){ return RUB.map(function(c){ return '<div class="rub"><div class="c">'+esc(c.k)+'<small>'+esc(c.d)+'</small></div>'+seg(path+'.'+c.id,SCALE,cur[c.id])+'</div>'; }).join('')+'<p class="note" style="margin:10px 0 0;">1 = no cumple · 2 = parcialmente · 3 = cumple con observaciones · 4 = cumple plenamente. En alucinación y supervisión, 4 significa menor riesgo y menor necesidad de revisión.</p>'; }
+function needHead(){ return S.need.title.trim()?'<div class="phase-arrow">Necesidad: <b>'+esc(S.need.title)+'</b>'+(S.need.ctx.trim()?' · '+esc(S.need.ctx):'')+'</div>':'<div class="phase-arrow"><b>Define primero la necesidad educativa (03).</b></div>'; }
+function renderLab(){ renderStepper(); var i=S.phase,h=needHead()+'<div class="phase-arrow">Fase '+(i+1)+' de '+PH.length+' · <b>'+PH[i]+'</b>'+(i<=4?' · versión inicial':i<=8?' · versión optimizada':'')+'</div>';
+ if(i===0) h+='<div class="card" style="margin-bottom:14px;"><div class="label">Tipo de apoyo que buscas</div>'+seg('p1.support',SUPPORT,S.p1.support)+'</div><div class="card" style="margin-bottom:14px;">'+ta('p1.purpose','Propósito educativo: qué debe lograr el resultado de la IA y para qué decisión o acción','Ej.: Contar con tres preguntas de apertura que revelen si los estudiantes confunden numerador y denominador, para decidir en la primera clase si reenseño la noción de parte-todo.')+'<div style="margin-top:12px;">'+ta('p1.criteria','Criterios de éxito: cómo sabrás que el resultado sirve','Ej.: preguntas respondibles en 2 minutos, sin lenguaje técnico, cada una vinculada a un error típico.')+'</div></div>';
+ if(i===1) h+='<div class="card" style="margin-bottom:14px;"><div class="label">Quién utilizará el resultado</div>'+seg('p2.user',USERS,S.p2.user)+'</div><div class="card" style="margin-bottom:14px;">'+ta('p2.traits','Características del usuario que el prompt debe tener en cuenta','Ej.: docente con poco tiempo de preparación; o estudiantes de 9–10 años con lectura en desarrollo.')+'<div style="margin-top:12px;">'+ta('p2.use','Qué hará con el resultado y en qué momento','Ej.: lo proyectará al inicio de la clase y anotará las respuestas en la pizarra.')+'</div></div>';
+ if(i===2) h+='<div class="card" style="margin-bottom:14px;"><div class="grid g2" style="gap:12px;"><div class="field"><span class="fl">Herramienta utilizada</span><select data-path="p3.tool">'+TOOLS.map(function(t){return '<option'+(S.p3.tool===t?' selected':'')+'>'+t+'</option>';}).join('')+'</select></div><div class="field"><span class="fl">Modelo o versión</span><input type="text" data-path="p3.ver" value="'+esc(S.p3.ver)+'" placeholder="Ej.: Claude Sonnet, GPT, Gemini Pro"></div><div class="field"><span class="fl">Fecha de la prueba</span><input type="date" data-path="p3.date" value="'+esc(S.p3.date)+'"></div><div class="field"><span class="fl">Confirmación</span><label class="check" style="margin-top:9px;"><input type="checkbox" data-path="p3.nopd"'+(S.p3.nopd?' checked':'')+'> El prompt no incluye datos identificables de estudiantes</label></div></div></div><div class="card" style="margin-bottom:14px;">'+ta('p3.prompt','Prompt inicial, exactamente como lo escribiste en la herramienta','Pega el texto completo del prompt.','prompt')+'<div style="margin-top:12px;"><div class="label">Análisis de estructura</div>'+analyzerHTML(S.p3.prompt)+'</div></div><div class="card" style="margin-bottom:14px;">'+ta('p3.expected','Resultado esperado: qué esperabas obtener antes de enviarlo','Ej.: tres preguntas en orden de dificultad, cada una con la respuesta esperada y el error que detecta.')+'<div style="margin-top:12px;">'+ta('p3.result','Resultado obtenido (pega la respuesta completa de la herramienta)','Pega la respuesta sin editarla.','result')+'</div></div>';
+ if(i===3) h+='<div class="card" style="margin-bottom:14px;"><div class="label">Rúbrica · versión inicial</div>'+rubric('p4.rub',S.p4.rub)+'</div><div class="card" style="margin-bottom:14px;">'+ta('p4.evidence','Evidencia: cita fragmentos del resultado que justifican cada puntuación','Ej.: Pertinencia 2: la segunda pregunta pide sumar fracciones, que no era el propósito...')+'<div style="margin-top:12px;">'+ta('p4.verify','Qué habría que verificar antes de usar este resultado','Ej.: la afirmación de que "el 70 % de los estudiantes confunde..." no tiene fuente.')+'</div></div>';
+ if(i===4) h+='<div class="card" style="margin-bottom:14px;"><div class="label">Errores, ambigüedades o limitaciones detectadas</div>'+ISSUES.map(function(is){ var on=!!S.p5.issues[is.id]; return '<div class="issue"><label class="check" style="margin-top:2px;"><input type="checkbox" data-path="p5.issues.'+is.id+'"'+(on?' checked':'')+'></label><div><div class="t">'+esc(is.t)+'</div>'+(on?'<div class="org"><span class="note">¿De dónde proviene?</span> '+seg('p5.origin.'+is.id,ORIGIN,S.p5.origin[is.id])+'</div>':'')+'</div></div>'; }).join('')+'<p class="note" style="margin:10px 0 0;">Del prompt: faltó o se formuló mal un componente. Del modelo: el prompt era claro y aun así falló (inventó, sesgó, simplificó). De la tarea: lo pedido exige información o juicio que la herramienta no tiene.</p></div><div class="card" style="margin-bottom:14px;">'+ta('p5.note','Describe las limitaciones con ejemplos del resultado','Ej.: la pregunta 3 usa "denominador común", término que el grupo no conoce; el prompt no indicaba vocabulario.')+'<div style="margin-top:12px;">'+ta('p5.human','Qué partes de este primer resultado requerían ya revisión humana','Ej.: decidir si el ejemplo de la pizza es pertinente para este grupo.')+'</div></div>';
+ if(i===5) h+='<div class="card" style="margin-bottom:14px;"><div class="label">Prompt inicial (referencia)</div><pre style="white-space:pre-wrap; font-family:var(--font-mono); font-size:12px; color:var(--ink-dim); margin:0; max-height:180px; overflow:auto;">'+esc(S.p3.prompt||'(sin prompt inicial)')+'</pre></div><div class="card" style="margin-bottom:14px;"><div class="label">Técnicas de refinamiento aplicadas</div>'+chips('p6.tech',TECH,S.p6.tech)+'</div><div class="card" style="margin-bottom:14px;">'+ta('p6.purpose','¿Ajustaste el propósito? Si no, déjalo vacío y se usará el inicial','Ej.: ahora el propósito incluye detectar también la confusión entre fracción y división.')+'</div><div class="card" style="margin-bottom:14px;">'+ta('p6.prompt','Prompt optimizado, exactamente como lo enviaste','Pega el texto completo del prompt refinado.','prompt')+'<div style="margin-top:12px;"><div class="label">Análisis de estructura</div>'+analyzerHTML(S.p6.prompt)+'</div></div><div class="card" style="margin-bottom:14px;">'+ta('p6.expected','Resultado esperado de la versión optimizada','Qué cambio concreto esperabas en el resultado.')+'<div style="margin-top:12px;">'+ta('p6.result','Resultado obtenido (pega la respuesta completa)','Pega la respuesta sin editarla.','result')+'</div></div>';
+ if(i===6) h+='<div class="card" style="margin-bottom:14px;"><div class="label">Los dos resultados</div><div class="side"><div class="col"><div class="label">Versión inicial</div><pre>'+esc(S.p3.result||'(pendiente)')+'</pre></div><div class="col v2"><div class="label">Versión optimizada</div><pre>'+esc(S.p6.result||'(pendiente)')+'</pre></div></div></div><div class="card" style="margin-bottom:14px;"><div class="label">Rúbrica · versión optimizada (misma rúbrica)</div>'+rubric('p7.rub',S.p7.rub)+'</div><div class="card" style="margin-bottom:14px;">'+ta('p7.changed','Qué cambió en el resultado y a qué cambio del prompt lo atribuyes','Ej.: al indicar el vocabulario permitido desaparecieron los términos técnicos; al pedir el error que detecta cada pregunta, la herramienta justificó cada una.')+'<div style="margin-top:12px;">'+ta('p7.remaining','Limitaciones que persisten en la versión optimizada','Ej.: sigue sin saber qué errores cometió realmente mi grupo; los ejemplos siguen siendo urbanos.')+'</div></div>';
+ if(i===7) h+='<div class="card" style="margin-bottom:14px;"><div class="label">Registro de verificación · afirmaciones, datos, referencias o contenidos del resultado optimizado</div>'+S.p8.items.map(function(it,k){ return '<div class="verif"><div class="field"><span class="fl">Qué verificaste</span><textarea data-path="p8.items.'+k+'.claim" placeholder="Ej.: que la fracción 3/4 se lee «tres cuartos» en el currículo nacional">'+esc(it.claim)+'</textarea></div><div class="field"><span class="fl">Cómo y contra qué fuente</span><textarea data-path="p8.items.'+k+'.how" placeholder="Ej.: programa oficial de 4.º grado, p. 32">'+esc(it.how)+'</textarea></div><div class="field"><span class="fl">Estado</span>'+seg('p8.items.'+k+'.status',VSTATUS,it.status)+'</div><div class="field"><span class="fl">&nbsp;</span>'+(S.p8.items.length>1?'<button type="button" class="pill-btn delverif" data-k="'+k+'">Quitar</button>':'')+'</div></div>'; }).join('')+'<div class="row" style="margin-top:12px;"><button type="button" class="pill-btn" id="addVerif">+ Añadir elemento</button><span class="note">Verifica siempre cifras, nombres, citas, normativa y afirmaciones sobre "lo que la investigación muestra".</span></div></div><div class="card" style="margin-bottom:14px;">'+ta('p8.note','Qué no pudiste verificar y qué harías con esa parte del resultado','Ej.: la afirmación sobre el porcentaje de estudiantes con la confusión no aparece en ninguna fuente: la elimino del material.')+'</div>';
+ if(i===8) h+='<div class="card" style="margin-bottom:14px;"><div class="label">Partes del resultado que requieren juicio o revisión humana</div>'+chips('p9.parts',HUMAN,S.p9.parts)+'</div><div class="card" style="margin-bottom:14px;">'+ta('p9.decides','Qué decide la persona y qué no delega en la herramienta, en este caso','Ej.: yo decido si las preguntas se ajustan a lo que mi grupo confunde de verdad; la herramienta propone redacciones.')+'<div style="margin-top:12px;"><div class="label">¿Cómo usarías el resultado optimizado?</div>'+seg('p9.use',USE,S.p9.use)+'</div></div>';
+ if(i===9) h+='<div class="card" style="margin-bottom:14px;"><div class="label">Uso responsable de la herramienta, a partir de lo que probaste</div>'+ta('p10.fit','Tipo de uso que considero apropiado, para qué tareas y con qué revisión','Ej.: Borradores de preguntas de apertura que el docente revisa y ajusta antes de usar.')+'<div style="margin-top:12px;">'+ta('p10.nofit','Situaciones en las que no recomendaría usar la herramienta, y por qué','Ej.: Calificar ensayos o decidir sobre un estudiante concreto; tareas que exigen citas exactas sin posibilidad de verificarlas.')+'</div></div><div class="card" style="margin-bottom:14px;"><div class="label">Tres criterios institucionales para un uso responsable</div><p class="note" style="margin:0 0 10px;">Cada criterio debe poder aplicarse y comprobarse: quién responde, qué se revisa y cómo se comprueba.</p>'+ta('p10.c1','Criterio 1','Ej.: Todo material generado se revisa por el docente contra el currículo antes de entregarse; el docente firma la revisión.')+'<div style="margin-top:12px;">'+ta('p10.c2','Criterio 2','')+'</div><div style="margin-top:12px;">'+ta('p10.c3','Criterio 3','')+'</div></div>';
+ h+=nav(i); $('#labBody').innerHTML=h; labelize(); }
+function labelize(){ $$('input[data-path],textarea[data-path],select[data-path],input[data-ref],textarea[data-ref]').forEach(function(el){ if(el.getAttribute('aria-label')) return; var f=el.closest('.field'),is=el.closest('.issue'),l=is?$('.t',is):(f&&$('.fl',f)); if(l) el.setAttribute('aria-label',l.textContent); }); }
+
+/* ================= RENDER: MATRIZ ================= */
+function matrixRows(){ var s=S,a1=analyze(s.p3.prompt),a2=analyze(s.p6.prompt),r1=rubAvg(s.p4.rub),r2=rubAvg(s.p7.rub); function lst(obj,dict){ return Object.keys(obj).filter(function(k){return obj[k];}).map(function(k){ var d=dict.filter(function(x){return x.id===k;})[0]; return d?d.t+(s.p5.origin[k]?' ('+ORIGIN[s.p5.origin[k]].toLowerCase()+')':''):k; }).join('; '); }
+ var ver2=s.p8.items.filter(function(it){return it.claim.trim();}).map(function(it){ return it.claim+(it.status?' — '+VSTATUS[it.status].toLowerCase():''); }).join('; ');
+ return [
+  {e:'Propósito educativo',v1:s.p1.purpose,v2:s.p6.purpose.trim()||s.p1.purpose},
+  {e:'Prompt',v1:s.p3.prompt,v2:s.p6.prompt,m1:a1.n+'/8 componentes · '+a1.words+' palabras',m2:a2.n+'/8 componentes · '+a2.words+' palabras'},
+  {e:'Resultado esperado',v1:s.p3.expected,v2:s.p6.expected},
+  {e:'Calidad del resultado',v1:(r1!=null?'Rúbrica: '+r1+'/4. ':'')+s.p4.evidence,v2:(r2!=null?'Rúbrica: '+r2+'/4. ':'')+s.p7.changed},
+  {e:'Limitaciones',v1:[lst(s.p5.issues,ISSUES),s.p5.note].filter(Boolean).join('\n'),v2:s.p7.remaining},
+  {e:'Verificación requerida',v1:s.p4.verify,v2:[ver2,s.p8.note].filter(Boolean).join('\n')},
+  {e:'Intervención humana',v1:s.p5.human,v2:[s.p9.parts.map(function(k){return HUMAN[k];}).join('; '),s.p9.decides,s.p9.use?'Uso: '+USE[s.p9.use].toLowerCase():''].filter(Boolean).join('\n')}
+ ]; }
+function renderMatrix(){ var rows=matrixRows(),s=S,a1=analyze(s.p3.prompt),a2=analyze(s.p6.prompt),r1=rubAvg(s.p4.rub),r2=rubAvg(s.p7.rub),done=PH.filter(function(n,i){return phaseDone(i);}).length;
+ function d(x,y){ if(x==null||y==null) return ''; var k=y-x; return '<span class="delta '+(k>0?'up':k<0?'dn':'eq')+'">'+(k>0?'+':'')+(Math.round(k*10)/10)+'</span>'; }
+ $('#kpis').innerHTML='<div class="card kpi"><div class="val">'+done+'<small> / '+PH.length+'</small></div><div class="lbl">Fases completas</div><div class="bar"><i style="width:'+(done/PH.length*100)+'%"></i></div></div><div class="card kpi"><div class="val">'+a1.n+' → '+a2.n+'<small> / 8</small></div><div class="lbl">Componentes del prompt</div><div class="read">Estructura inicial frente a optimizada. '+d(a1.n,a2.n)+'</div></div><div class="card kpi"><div class="val">'+(r1!=null?r1:'—')+' → '+(r2!=null?r2:'—')+'<small> / 4</small></div><div class="lbl">Rúbrica promedio</div><div class="read">Calidad juzgada por ti con los mismos criterios. '+d(r1,r2)+'</div></div>';
+ $('#matrix').innerHTML='<thead><tr><th>Elemento</th><th>Versión inicial</th><th>Versión optimizada</th></tr></thead><tbody>'+rows.map(function(r){ return '<tr><td class="e">'+esc(r.e)+'</td><td class="v">'+none(r.v1)+(r.m1?'<div class="note" style="margin-top:6px;">'+esc(r.m1)+'</div>':'')+'</td><td class="v v2">'+none(r.v2)+(r.m2?'<div class="note" style="margin-top:6px;">'+esc(r.m2)+'</div>':'')+'</td></tr>'; }).join('')+'</tbody>';
+ $('#promptCompare').innerHTML='<div class="col"><div class="label">Inicial</div>'+analyzerHTML(s.p3.prompt)+'</div><div class="col v2"><div class="label">Optimizado</div>'+analyzerHTML(s.p6.prompt)+'</div>';
+ $('#rubricCompare').innerHTML='<div class="mtx-wrap"><table class="mtx"><thead><tr><th>Criterio</th><th>Inicial</th><th>Optimizada</th><th>Δ</th></tr></thead><tbody>'+RUB.map(function(c){ var x=+s.p4.rub[c.id]||null,y=+s.p7.rub[c.id]||null; return '<tr><td class="c">'+esc(c.k)+'</td><td>'+(x||'—')+'</td><td>'+(y||'—')+'</td><td>'+d(x,y)+'</td></tr>'; }).join('')+'</tbody></table></div>'; }
+
+/* ================= REPORT ================= */
+function renderChecklist(){ var it=PH.map(function(n,i){ return ['Fase '+(i+1)+' · '+n,phaseDone(i)]; }); it.unshift(['Necesidad educativa definida',!!(S.need.title.trim()&&S.need.desc.trim())]); it.push(['Declaración de uso de IA',!!S.refl.iaDecl.trim()],['Reflexión final',!!S.refl.reflexion.trim()],['Nombre del doctorando',!!S.refl.nombre.trim()]); $('#checklist').innerHTML=it.map(function(x){ return '<div><span style="color:'+(x[1]?'var(--teal-400)':'var(--amber)')+'; font-family:var(--font-mono);">'+(x[1]?'●':'○')+'</span> '+esc(x[0])+'</div>'; }).join(''); }
+function buildReport(){ var s=S,rows=matrixRows(),nombre=s.refl.nombre.trim()||'(sin nombre)',a1=analyze(s.p3.prompt),a2=analyze(s.p6.prompt),r1=rubAvg(s.p4.rub),r2=rubAvg(s.p7.rub); function v(x){ return x&&String(x).trim()?esc(x):'—'; }
+ var h='<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>VIA7012 S6 · Informe del laboratorio de prompts</title><style>body{font-family:Inter,Segoe UI,Arial,sans-serif;color:#1b2740;max-width:900px;margin:0 auto;padding:40px 28px;line-height:1.55;font-size:13.5px}h1{font-size:24px;color:#062B70;margin:0 0 4px}h2{font-size:17px;color:#062B70;border-bottom:2px solid #1BDAB5;padding-bottom:6px;margin:30px 0 10px}h3{font-size:14px;color:#0944AF;margin:18px 0 6px}.meta{color:#5a6a8c;font-size:12.5px;margin-bottom:6px}.pre{white-space:pre-wrap;background:#f3f6fc;border:1px solid #d7e0f2;border-radius:10px;padding:10px 14px}.prompt{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px}table{width:100%;border-collapse:collapse;margin:8px 0 14px;font-size:12.5px}th,td{border:1px solid #d7e0f2;padding:8px 10px;text-align:left;vertical-align:top;white-space:pre-wrap}th{background:#eef3fb;color:#062B70;font-weight:600}td.e{font-weight:600;white-space:nowrap}.refs li{margin-bottom:6px;font-size:12.5px}@media print{body{padding:0}}</style></head><body>';
+ h+='<div class="meta">Broward International University · VIA7012 Introduction to AI in Sustainable Education · Semana 6 · Análisis crítico de una aplicación de IA generativa y registro de prompts (formativa, 0 %)</div><h1>Informe del Laboratorio de Prompts</h1><div class="meta">'+esc(nombre)+(s.refl.programa.trim()?' · '+esc(s.refl.programa):'')+' · '+new Date().toLocaleDateString('es')+' · Herramienta: '+esc(s.p3.tool)+(s.p3.ver.trim()?' ('+esc(s.p3.ver)+')':'')+(s.p3.date?' · prueba del '+esc(s.p3.date):'')+'</div>';
+ h+='<h2>1. Necesidad educativa</h2><p><b>'+v(s.need.title)+'</b>'+(s.need.ctx.trim()?' · '+esc(s.need.ctx):'')+'</p><div class="pre">'+v(s.need.desc)+'</div><p><b>Tipo de apoyo:</b> '+(s.p1.support?SUPPORT[s.p1.support]:'—')+' · <b>Usuario del resultado:</b> '+(s.p2.user?USERS[s.p2.user]:'—')+'</p><p><b>Características del usuario:</b> '+v(s.p2.traits)+'<br><b>Uso previsto:</b> '+v(s.p2.use)+'<br><b>Criterios de éxito:</b> '+v(s.p1.criteria)+'</p>';
+ h+='<h2>2. Matriz de análisis</h2><table><tr><th>Elemento</th><th>Versión inicial</th><th>Versión optimizada</th></tr>'+rows.map(function(r){ return '<tr><td class="e">'+esc(r.e)+'</td><td>'+v(r.v1)+(r.m1?'<br><small>'+esc(r.m1)+'</small>':'')+'</td><td>'+v(r.v2)+(r.m2?'<br><small>'+esc(r.m2)+'</small>':'')+'</td></tr>'; }).join('')+'</table>';
+ h+='<h2>3. Prompts y resultados completos</h2><h3>Prompt inicial ('+a1.n+'/8 componentes)</h3><div class="pre prompt">'+v(s.p3.prompt)+'</div><h3>Resultado inicial</h3><div class="pre">'+v(s.p3.result)+'</div><h3>Técnicas de refinamiento</h3><p>'+(s.p6.tech.map(function(k){return TECH[k];}).join('; ')||'—')+'</p><h3>Prompt optimizado ('+a2.n+'/8 componentes)</h3><div class="pre prompt">'+v(s.p6.prompt)+'</div><h3>Resultado optimizado</h3><div class="pre">'+v(s.p6.result)+'</div>';
+ h+='<h2>4. Rúbrica de calidad</h2><table><tr><th>Criterio</th><th>Inicial</th><th>Optimizada</th></tr>'+RUB.map(function(c){ return '<tr><td class="e">'+esc(c.k)+'</td><td>'+(s.p4.rub[c.id]||'—')+'</td><td>'+(s.p7.rub[c.id]||'—')+'</td></tr>'; }).join('')+'<tr><td class="e">Promedio</td><td>'+(r1!=null?r1:'—')+'</td><td>'+(r2!=null?r2:'—')+'</td></tr></table><p><b>Evidencia (inicial):</b> '+v(s.p4.evidence)+'</p><p><b>Qué cambió y por qué:</b> '+v(s.p7.changed)+'</p>';
+ h+='<h2>5. Registro de verificación</h2><table><tr><th>Qué se verificó</th><th>Cómo y contra qué fuente</th><th>Estado</th></tr>'+(s.p8.items.filter(function(it){return it.claim.trim();}).map(function(it){ return '<tr><td>'+esc(it.claim)+'</td><td>'+v(it.how)+'</td><td>'+(it.status?VSTATUS[it.status]:'—')+'</td></tr>'; }).join('')||'<tr><td colspan="3">—</td></tr>')+'</table><p>'+v(s.p8.note)+'</p>';
+ h+='<h2>6. Juicio y revisión humana</h2><p>'+(s.p9.parts.map(function(k){return HUMAN[k];}).join('; ')||'—')+'</p><div class="pre">'+v(s.p9.decides)+'</div><p><b>Uso del resultado optimizado:</b> '+(s.p9.use?USE[s.p9.use]:'—')+'</p>';
+ h+='<h2>7. Uso responsable</h2><p><b>Uso apropiado:</b></p><div class="pre">'+v(s.p10.fit)+'</div><p><b>Situaciones en que no la recomendaría:</b></p><div class="pre">'+v(s.p10.nofit)+'</div><p><b>Tres criterios institucionales:</b></p><ol><li>'+v(s.p10.c1)+'</li><li>'+v(s.p10.c2)+'</li><li>'+v(s.p10.c3)+'</li></ol>';
+ h+='<h2>8. Declaración de uso de IA</h2><div class="pre">'+v(s.refl.iaDecl)+'</div>';
+ h+='<h2>9. Reflexión final</h2><div class="pre">'+v(s.refl.reflexion)+'</div>';
+ h+='<h2>Referencias</h2><ul class="refs">'+REFS.map(function(r){return '<li>'+r+'</li>';}).join('')+'</ul><p class="meta">Documento producido por el doctorando como evidencia de aprendizaje formativa. Los resultados de la herramienta de IA se reproducen sin editar; su uso en el aula queda condicionado a la revisión indicada en la sección 6.</p></body></html>'; return h; }
+function download(){ var nm=(S.refl.nombre||'').trim().replace(/[^\w\u00C0-\u017F]+/g,'_'); dl('VIA7012_S6_Informe_Prompts'+(nm?'_'+nm:'')+'.html',buildReport(),'text/html;charset=utf-8'); toast('Informe descargado'); }
+
+/* ================= NAV + EVENTS ================= */
+function showTab(i){ $$('.tab').forEach(function(t){ t.classList.toggle('active',+t.getAttribute('data-tab')===i); }); $$('.panel').forEach(function(p){ p.classList.toggle('active',+p.getAttribute('data-panel')===i); }); window.scrollTo(0,0); if(i===2){ renderNeeds(); labelize(); } if(i===3) renderLab(); if(i===4) renderMatrix(); if(i===5){ renderChecklist(); $$('[data-ref]').forEach(function(el){ el.value=S.refl[el.getAttribute('data-ref')]||''; }); } markTabs(); }
+function markTabs(){ $('.tab[data-tab="2"]').classList.toggle('has-done',!!(S.need.title.trim()&&S.need.desc.trim())); $('.tab[data-tab="3"]').classList.toggle('has-done',PH.every(function(n,i){return phaseDone(i);})); $('.tab[data-tab="5"]').classList.toggle('has-done',!!S.refl.nombre.trim()); }
+function showPhase(i){ S.phase=i; save(); renderLab(); var st=$('#stepper'); if(st) window.scrollTo(0, st.getBoundingClientRect().top+window.pageYOffset-120); }
+function renderAll(){ $('#refsList').innerHTML=REFS.map(function(r){return '<li>'+r+'</li>';}).join(''); $('#patterns').innerHTML=PATTERNS.map(function(p){ return '<div class="pattern"><div class="k">'+esc(p.k)+'</div><div>'+esc(p.d)+'<div class="ex">'+esc(p.ex)+'</div></div>'; }).join(''); renderNeeds(); renderLab(); markTabs(); labelize(); }
+
+document.addEventListener('click',function(ev){ var card=ev.target.closest('.need'); if(card){ var k=+card.getAttribute('data-need'),n=NEEDS[k]; S.need.bank=k; S.need.title=n.t; S.need.ctx=n.ctx; S.need.desc=n.d; save(); renderNeeds(); markTabs(); toast('Necesidad cargada: edítala si quieres'); return; }
+ var t=ev.target.closest('button'); if(!t) return;
+ if(t.classList.contains('tab')){ showTab(+t.getAttribute('data-tab')); return; }
+ if(t.classList.contains('goto')){ showTab(+t.getAttribute('data-goto')); return; }
+ if(t.classList.contains('gophase')){ showPhase(+t.getAttribute('data-gophase')); return; }
+ if(t.classList.contains('step')){ showPhase(+t.getAttribute('data-phase')); return; }
+ if(t.id==='btnDownload'||t.id==='btnDownloadTop'){ download(); return; }
+ if(t.id==='addVerif'){ S.p8.items.push({claim:'',how:'',status:null}); save(); renderLab(); return; }
+ if(t.classList.contains('delverif')){ S.p8.items.splice(+t.getAttribute('data-k'),1); save(); renderLab(); return; }
+ if(t.id==='btnReset'){ if(window.confirm('Se borrarán todos los registros, prompts y textos de este laboratorio. ¿Continuar?')){ try{ window.localStorage.removeItem(STORE_KEY); }catch(x){} S=freshState(); renderAll(); showTab(2); toast('Laboratorio reiniciado'); } return; }
+ if(t.classList.contains('pick')){ var p=t.getAttribute('data-path'),v=t.getAttribute('data-v'),arr=getPath(p)||[],ix=arr.indexOf(v); if(ix>=0) arr.splice(ix,1); else arr.push(v); setPath(p,arr); save(); t.classList.toggle('on',ix<0); renderStepper(); markTabs(); return; }
+ var sg=t.closest('.seg'); if(sg){ var path=sg.getAttribute('data-path'),vv=t.getAttribute('data-v'),cur=getPath(path); setPath(path,String(cur)===vv?null:vv); save(); $$('button',sg).forEach(function(b){ b.classList.toggle('on',b.getAttribute('data-v')===String(getPath(path))); }); renderStepper(); markTabs(); return; }
+});
+document.addEventListener('change',function(ev){ var el=ev.target; if(el.tagName==='SELECT'&&el.hasAttribute('data-path')){ setPath(el.getAttribute('data-path'),el.value); save(); return; } if(el.type==='checkbox'&&el.hasAttribute('data-path')){ setPath(el.getAttribute('data-path'),el.checked); save(); renderLab(); } });
+document.addEventListener('input',function(ev){ var el=ev.target; if(el.hasAttribute('data-path')&&el.type!=='checkbox'&&el.tagName!=='SELECT'){ var p=el.getAttribute('data-path'); setPath(p,el.value); save(); clearTimeout(document._st); document._st=setTimeout(function(){ renderStepper(); markTabs(); if(p==='p3.prompt'||p==='p6.prompt'){ var box=el.closest('.card').querySelector('.analyzer'); if(box) box.outerHTML=analyzerHTML(el.value); } },350); return; } if(el.hasAttribute('data-ref')){ S.refl[el.getAttribute('data-ref')]=el.value; save(); markTabs(); clearTimeout(document._sf); document._sf=setTimeout(renderChecklist,400); } });
+
+load(); renderAll();
+})();
+</script>
+</body>
+</html>

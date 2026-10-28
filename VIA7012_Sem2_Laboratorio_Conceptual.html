@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VIA7012 · Semana 2 · Laboratorio conceptual de tipos de IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy-950:#041B45; --navy-900:#062B70; --navy-800:#073587;
+    --blue-700:#0944AF; --blue-500:#2073F5; --teal-400:#1BDAB5;
+    --amber:#F5B942; --coral:#FF6B6B; --gray-300:#BEC0BD; --white:#FFFFFF;
+    --glass:rgba(255,255,255,0.055); --glass-strong:rgba(255,255,255,0.09);
+    --border-soft:rgba(255,255,255,0.14); --border-strong:rgba(255,255,255,0.26);
+    --ink:#EAF0FC; --ink-dim:#AFC0E0; --ink-faint:#7C90BC;
+    --font-display:'Space Grotesk', sans-serif; --font-body:'Inter', sans-serif; --font-mono:'JetBrains Mono', monospace;
+  }
+  *,*::before,*::after{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0; min-height:100%;
+    background:
+      radial-gradient(ellipse 900px 600px at 88% -6%, rgba(32,115,245,0.24), transparent 60%),
+      radial-gradient(ellipse 700px 500px at -4% 106%, rgba(27,218,181,0.14), transparent 55%),
+      linear-gradient(160deg, var(--navy-950) 0%, var(--navy-900) 46%, var(--navy-800) 100%);
+    background-attachment:fixed; color:var(--ink); font-family:var(--font-body); -webkit-font-smoothing:antialiased;
+  }
+  ::selection{ background:var(--blue-500); color:#fff; }
+  button, input, select, textarea{ font-family:inherit; }
+  button{ cursor:pointer; }
+  a{ color:inherit; }
+  :focus-visible{ outline:2px solid var(--teal-400); outline-offset:2px; }
+  .noise{ position:fixed; inset:0; pointer-events:none; opacity:0.035; mix-blend-mode:overlay; z-index:0;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+  .mark{ position:relative; width:22px; height:22px; flex:0 0 auto; }
+  .mark span{ position:absolute; width:14px; height:14px; border-radius:3px; }
+  .mark span.t{ top:0; left:0; background:var(--teal-400); }
+  .mark span.b{ bottom:0; right:0; background:var(--blue-500); }
+
+  /* ---------- topbar + tabs ---------- */
+  header.topbar{ position:sticky; top:0; z-index:40; background:rgba(4,27,69,0.72); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); border-bottom:1px solid var(--border-soft); }
+  .topbar-row{ display:flex; align-items:center; justify-content:space-between; gap:14px; padding:14px clamp(16px,4vw,48px) 10px; }
+  .brand{ display:flex; align-items:center; gap:10px; min-width:0; }
+  .brand img{ height:22px; width:auto; display:block; opacity:0.95; }
+  .brand .divider{ width:1px; height:18px; background:var(--border-strong); }
+  .brand .tag{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:0.12em; color:var(--ink-dim); text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .top-actions{ display:flex; gap:8px; align-items:center; flex:0 0 auto; }
+  .pill-btn{ display:inline-flex; align-items:center; gap:7px; background:var(--glass); border:1px solid var(--border-soft); color:var(--ink); padding:8px 13px; border-radius:100px; font-size:12px; font-weight:600; transition:background .2s, border-color .2s; }
+  .pill-btn:hover{ background:var(--glass-strong); border-color:var(--border-strong); }
+  .pill-btn.primary{ background:linear-gradient(90deg,var(--teal-400),var(--blue-500)); color:#04193f; border:none; }
+  .pill-btn svg{ width:14px; height:14px; }
+  .tabs{ display:flex; gap:4px; padding:0 clamp(16px,4vw,48px); overflow-x:auto; scrollbar-width:none; }
+  .tabs::-webkit-scrollbar{ display:none; }
+  .tab{ flex:0 0 auto; background:transparent; border:none; border-bottom:2px solid transparent; color:var(--ink-dim); padding:10px 12px 11px; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:8px; white-space:nowrap; transition:color .2s, border-color .2s; }
+  .tab .n{ font-family:var(--font-mono); font-size:10.5px; color:var(--ink-faint); }
+  .tab:hover{ color:#fff; }
+  .tab.active{ color:#fff; border-bottom-color:var(--teal-400); }
+  .tab.active .n{ color:var(--teal-400); }
+  .tab .done{ width:7px; height:7px; border-radius:50%; background:var(--teal-400); display:none; }
+  .tab.has-done .done{ display:inline-block; }
+
+  /* ---------- layout ---------- */
+  main{ position:relative; z-index:1; max-width:1180px; margin:0 auto; padding:34px clamp(16px,4vw,48px) 90px; }
+  .panel{ display:none; }
+  .panel.active{ display:block; animation:fadeIn .45s ease; }
+  @keyframes fadeIn{ from{ opacity:0; transform:translateY(6px);} to{ opacity:1; transform:none;} }
+  @media (prefers-reduced-motion:reduce){ .panel.active{ animation:none; } html{ scroll-behavior:auto; } }
+
+  .eyebrow{ display:inline-flex; align-items:center; gap:8px; font-family:var(--font-mono); font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--teal-400); font-weight:500; margin-bottom:12px; }
+  .eyebrow::before{ content:''; width:16px; height:1px; background:var(--teal-400); }
+  h1.title{ font-family:var(--font-display); font-weight:700; color:#fff; font-size:clamp(26px,3.6vw,42px); line-height:1.1; letter-spacing:-0.01em; margin:0 0 14px; }
+  h2{ font-family:var(--font-display); font-weight:700; color:#fff; font-size:clamp(19px,2.2vw,24px); line-height:1.2; margin:0 0 10px; letter-spacing:-0.005em; }
+  h3{ font-family:var(--font-display); font-weight:600; color:#fff; font-size:16px; margin:0 0 8px; }
+  p.lede{ font-size:clamp(14.5px,1.5vw,17px); line-height:1.62; color:var(--ink-dim); max-width:780px; margin:0 0 26px; }
+  p{ line-height:1.62; }
+  .muted{ color:var(--ink-dim); }
+  .faint{ color:var(--ink-faint); }
+  .mono{ font-family:var(--font-mono); }
+  .label{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:0.1em; color:var(--teal-400); margin-bottom:8px; text-transform:uppercase; }
+
+  .card{ background:var(--glass); border:1px solid var(--border-soft); border-radius:18px; backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); padding:22px 24px; }
+  .card.tight{ padding:16px 18px; border-radius:14px; }
+  .card.accent{ border-color:rgba(27,218,181,0.35); background:rgba(27,218,181,0.06); }
+  .card.warn{ border-color:rgba(245,185,66,0.4); background:rgba(245,185,66,0.07); }
+  .card.danger{ border-color:rgba(255,107,107,0.4); background:rgba(255,107,107,0.07); }
+  .grid{ display:grid; gap:14px; }
+  .g2{ grid-template-columns:repeat(2,1fr); } .g3{ grid-template-columns:repeat(3,1fr); } .g4{ grid-template-columns:repeat(4,1fr); }
+  @media (max-width:860px){ .g3,.g4{ grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:600px){ .g2,.g3,.g4{ grid-template-columns:1fr;} }
+  .stack{ display:flex; flex-direction:column; gap:14px; }
+  .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .sp{ justify-content:space-between; }
+
+  .chip{ display:inline-flex; align-items:center; gap:6px; font-family:var(--font-mono); font-size:11.5px; font-weight:500; letter-spacing:0.02em; padding:7px 13px; border-radius:100px; border:1px solid var(--border-soft); background:var(--glass); color:var(--ink-dim); transition:all .2s; }
+  button.chip:hover{ border-color:var(--border-strong); color:#fff; }
+  .chip.on{ background:rgba(27,218,181,0.14); border-color:var(--teal-400); color:#fff; }
+  .chip.sm{ font-size:10.5px; padding:5px 10px; }
+  .tag-group{ display:flex; gap:6px; flex-wrap:wrap; }
+
+  /* ---------- forms ---------- */
+  textarea, input[type=text], select{ width:100%; background:rgba(4,27,69,0.45); border:1px solid var(--border-soft); border-radius:12px; color:var(--ink); font-size:13.5px; line-height:1.55; padding:11px 13px; transition:border-color .2s; }
+  textarea{ min-height:88px; resize:vertical; }
+  textarea:focus, input:focus, select:focus{ border-color:var(--teal-400); outline:none; }
+  select{ appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23AFC0E0' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; padding-right:34px; }
+  select option{ background:#062B70; color:#fff; }
+  .field{ display:flex; flex-direction:column; gap:6px; }
+  .field .fl{ font-size:12px; font-weight:600; color:var(--ink-dim); }
+  .seg{ display:inline-flex; background:rgba(4,27,69,0.45); border:1px solid var(--border-soft); border-radius:100px; padding:3px; gap:2px; flex-wrap:wrap; }
+  .seg button{ background:transparent; border:none; color:var(--ink-dim); font-size:12px; font-weight:600; padding:7px 12px; border-radius:100px; transition:all .18s; }
+  .seg button:hover{ color:#fff; }
+  .seg button.on{ background:var(--glass-strong); color:#fff; box-shadow:inset 0 0 0 1px var(--border-strong); }
+  .seg button.on[data-v="nucleo"], .seg button.on[data-v="fuerte"], .seg button.on[data-v="disponible"], .seg button.on[data-v="relevante"], .seg button.on[data-v="bidireccional"]{ background:rgba(27,218,181,0.18); box-shadow:inset 0 0 0 1px var(--teal-400); }
+  .seg button.on[data-v="periferico"], .seg button.on[data-v="debil"], .seg button.on[data-v="limitado"], .seg button.on[data-v="mas"], .seg button.on[data-v="descendente"], .seg button.on[data-v="ascendente"]{ background:rgba(32,115,245,0.22); box-shadow:inset 0 0 0 1px var(--blue-500); }
+  .seg button.on[data-v="tension"], .seg button.on[data-v="desconocido"], .seg button.on[data-v="desconocida"], .seg button.on[data-v="medio"]{ background:rgba(245,185,66,0.2); box-shadow:inset 0 0 0 1px var(--amber); }
+  .seg button.on[data-v="omitido"], .seg button.on[data-v="inexistente"], .seg button.on[data-v="ausente"], .seg button.on[data-v="irrelevante"], .seg button.on[data-v="bloqueado"], .seg button.on[data-v="alto"]{ background:rgba(255,107,107,0.2); box-shadow:inset 0 0 0 1px var(--coral); }
+
+  /* ---------- lab stepper ---------- */
+  .stepper{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:22px; }
+  .step{ display:inline-flex; align-items:center; gap:8px; background:var(--glass); border:1px solid var(--border-soft); color:var(--ink-dim); padding:8px 13px 8px 9px; border-radius:100px; font-size:12px; font-weight:600; transition:all .2s; }
+  .step .num{ width:20px; height:20px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:10.5px; background:rgba(255,255,255,0.08); color:var(--ink); }
+  .step.active{ background:rgba(32,115,245,0.2); border-color:var(--blue-500); color:#fff; }
+  .step.active .num{ background:var(--blue-700); color:#fff; }
+  .step.done .num{ background:var(--teal-400); color:#04193f; }
+  .step:hover{ border-color:var(--border-strong); color:#fff; }
+  .phase{ display:none; } .phase.active{ display:block; }
+  .phase-arrow{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; font-family:var(--font-mono); font-size:11px; color:var(--ink-faint); margin:0 0 22px; }
+  .phase-arrow b{ color:var(--teal-400); font-weight:500; }
+
+  /* ---------- actor cards ---------- */
+  .actor{ display:grid; grid-template-columns:1fr auto; gap:12px; align-items:start; }
+  .actor .meta{ min-width:0; }
+  .actor .name{ font-weight:700; color:#fff; font-size:14px; margin-bottom:3px; }
+  .actor .grp{ font-family:var(--font-mono); font-size:10px; letter-spacing:0.08em; color:var(--ink-faint); text-transform:uppercase; }
+  .actor .desc{ font-size:12.5px; color:var(--ink-dim); line-height:1.5; margin-top:6px; }
+  .actor .initial{ display:inline-block; font-family:var(--font-mono); font-size:9.5px; padding:2px 7px; border-radius:100px; border:1px solid rgba(32,115,245,0.5); color:var(--blue-500); margin-left:6px; vertical-align:middle; }
+  @media (max-width:600px){ .actor{ grid-template-columns:1fr; } }
+
+  .rel{ display:grid; grid-template-columns:1.2fr 1.6fr auto; gap:12px; align-items:center; }
+  .rel .pair{ font-weight:600; color:#fff; font-size:13.5px; }
+  .rel .pair span{ color:var(--teal-400); font-family:var(--font-mono); font-size:11px; }
+  .rel .hint{ font-size:12px; color:var(--ink-dim); line-height:1.5; }
+  .rel.na{ opacity:.45; }
+  .check{ display:inline-flex; align-items:center; gap:8px; font-size:12px; font-weight:600; color:var(--ink-dim); cursor:pointer; user-select:none; }
+  .check input{ width:16px; height:16px; accent-color:var(--teal-400); }
+  @media (max-width:860px){ .rel{ grid-template-columns:1fr; } }
+
+  .voice{ border-left:3px solid var(--blue-500); padding-left:14px; }
+  .voice .who{ font-size:12px; font-weight:700; color:#fff; }
+  .voice .role{ font-family:var(--font-mono); font-size:10.5px; color:var(--ink-faint); }
+  .voice q{ display:block; font-size:13.5px; color:var(--ink); line-height:1.6; margin:6px 0 0; font-style:italic; quotes:"“" "”"; }
+  .data-row{ display:flex; gap:10px; align-items:baseline; font-size:13px; padding:7px 0; border-bottom:1px dashed var(--border-soft); }
+  .data-row:last-child{ border-bottom:none; }
+  .data-row .k{ flex:0 0 46%; color:var(--ink-dim); }
+  .data-row .v{ color:#fff; font-weight:600; }
+  .data-row .v.unknown{ color:var(--amber); font-weight:500; font-style:italic; }
+
+  /* ---------- KPIs ---------- */
+  .kpi{ padding:16px 18px; }
+  .kpi .val{ font-family:var(--font-display); font-size:30px; font-weight:700; color:#fff; line-height:1; }
+  .kpi .val small{ font-size:14px; color:var(--ink-faint); font-weight:500; }
+  .kpi .lbl{ font-size:12px; color:var(--ink-dim); margin-top:6px; font-weight:600; }
+  .kpi .read{ font-size:12px; color:var(--ink-faint); margin-top:8px; line-height:1.5; }
+  .bar{ height:6px; background:rgba(255,255,255,0.08); border-radius:100px; overflow:hidden; margin-top:10px; }
+  .bar i{ display:block; height:100%; background:linear-gradient(90deg,var(--teal-400),var(--blue-500)); width:0; transition:width .6s ease; }
+
+  .consequence{ display:grid; grid-template-columns:auto 1fr; gap:12px; align-items:start; }
+  .consequence .ico{ width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:15px; background:rgba(255,107,107,0.15); border:1px solid rgba(255,107,107,0.4); }
+  .consequence.mild .ico{ background:rgba(245,185,66,0.15); border-color:rgba(245,185,66,0.4); }
+  .consequence.ok .ico{ background:rgba(27,218,181,0.15); border-color:rgba(27,218,181,0.4); }
+  .consequence .t{ font-weight:700; color:#fff; font-size:13.5px; margin-bottom:3px; }
+  .consequence .d{ font-size:13px; color:var(--ink-dim); line-height:1.55; }
+
+  .diff{ font-size:13px; }
+  .diff .add{ color:var(--teal-400); } .diff .rem{ color:var(--coral); } .diff .chg{ color:var(--amber); }
+  .diff li{ margin:4px 0; }
+
+  /* ---------- map ---------- */
+  .map-wrap{ background:rgba(4,27,69,0.5); border:1px solid var(--border-soft); border-radius:18px; padding:10px; overflow:hidden; }
+  .map-wrap svg{ width:100%; height:auto; display:block; }
+  .legend{ display:flex; gap:14px; flex-wrap:wrap; font-size:11.5px; color:var(--ink-dim); margin-top:10px; }
+  .legend i{ display:inline-block; width:22px; height:0; border-top:3px solid; vertical-align:middle; margin-right:6px; border-radius:2px; }
+  .legend .dot{ display:inline-block; width:10px; height:10px; border-radius:50%; vertical-align:middle; margin-right:6px; }
+
+  /* ---------- theory ---------- */
+  .theory{ display:grid; grid-template-columns:auto 1fr; gap:16px; }
+  .theory .n{ font-family:var(--font-display); font-size:28px; font-weight:700; color:rgba(255,255,255,0.18); line-height:1; width:40px; }
+  .theory .cite{ font-family:var(--font-mono); font-size:11px; color:var(--teal-400); margin-bottom:6px; }
+  .theory p{ margin:0; font-size:13.5px; color:var(--ink-dim); }
+  .theory .apply{ margin-top:10px; font-size:12.5px; color:var(--ink); background:rgba(32,115,245,0.1); border:1px solid rgba(32,115,245,0.3); border-radius:10px; padding:9px 12px; }
+  .theory .apply b{ color:var(--blue-500); font-family:var(--font-mono); font-weight:500; font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; display:block; margin-bottom:3px; }
+  .refs{ font-size:12.5px; color:var(--ink-dim); line-height:1.6; }
+  .refs li{ margin-bottom:8px; padding-left:1.6em; text-indent:-1.6em; list-style:none; }
+  .refs ul{ padding:0; margin:0; }
+  .flow-strip{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .flow-strip .fs{ background:var(--glass); border:1px solid var(--border-soft); padding:9px 13px; border-radius:12px; font-size:12.5px; font-weight:600; color:#fff; }
+  .flow-strip .ar{ color:var(--teal-400); font-family:var(--font-mono); }
+  ol.steps{ padding-left:20px; margin:0; } ol.steps li{ margin-bottom:10px; font-size:13.5px; color:var(--ink-dim); line-height:1.6; } ol.steps li b{ color:#fff; }
+  .note{ font-size:12px; color:var(--ink-faint); line-height:1.5; }
+  .nav-row{ display:flex; justify-content:space-between; gap:10px; margin-top:26px; flex-wrap:wrap; }
+  .toast{ position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(20px); background:rgba(4,27,69,0.92); border:1px solid var(--teal-400); color:#fff; padding:11px 18px; border-radius:100px; font-size:13px; font-weight:600; opacity:0; transition:all .3s; z-index:60; pointer-events:none; }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .hero-q{ font-family:var(--font-display); font-size:clamp(17px,2vw,22px); color:#fff; font-weight:600; font-style:italic; line-height:1.4; margin:0; }
+  .mtx{ width:100%; border-collapse:separate; border-spacing:0; font-size:12.5px; }
+  .mtx th,.mtx td{ padding:8px 8px; border-bottom:1px solid var(--border-soft); text-align:left; vertical-align:top; }
+  .mtx th{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink-faint); font-weight:500; }
+  .mtx td.c{ color:#fff; font-weight:600; }
+  .mtx td .hint{ font-size:11.5px; color:var(--ink-faint); font-weight:400; margin-top:2px; }
+  .mtx select{ padding:7px 28px 7px 10px; font-size:12.5px; border-radius:9px; min-width:64px; }
+  .mtx tfoot td{ border-bottom:none; border-top:2px solid var(--border-strong); font-family:var(--font-display); font-size:18px; color:#fff; font-weight:700; }
+  .mtx-wrap{ overflow-x:auto; }
+  .alt-tabs{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+  .alt-tab{ display:inline-flex; align-items:center; gap:8px; background:var(--glass); border:1px solid var(--border-soft); color:var(--ink-dim); padding:9px 14px; border-radius:12px; font-size:12.5px; font-weight:600; transition:all .2s; }
+  .alt-tab .k{ font-family:var(--font-mono); width:22px; height:22px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; font-size:11px; background:rgba(255,255,255,0.08); color:#fff; }
+  .alt-tab.active{ background:rgba(32,115,245,0.2); border-color:var(--blue-500); color:#fff; }
+  .alt-tab.short .k{ background:var(--teal-400); color:#04193f; }
+  .dim{ padding:12px 14px; }
+  .dim .dn{ font-family:var(--font-mono); font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--teal-400); margin-bottom:5px; }
+  .dim .dv{ font-size:12.5px; color:var(--ink); line-height:1.5; }
+  .dim .dv .u{ color:var(--amber); font-style:italic; }
+  .timeline{ display:grid; grid-template-columns:auto 1fr; gap:12px 16px; }
+  .timeline .tm{ font-family:var(--font-mono); font-size:11px; color:var(--teal-400); padding-top:3px; white-space:nowrap; }
+  .timeline .tx{ font-size:13.5px; color:var(--ink); line-height:1.55; }
+  .seg button.on[data-v="apoyo"], .seg button.on[data-v="lista"], .seg button.on[data-v="solida"], .seg button.on[data-v="no_aplica"], .seg button.on[data-v="si"]{ background:rgba(27,218,181,0.18); box-shadow:inset 0 0 0 1px var(--teal-400); }
+  .seg button.on[data-v="neutral"], .seg button.on[data-v="parcial"], .seg button.on[data-v="media"], .seg button.on[data-v="bajo"]{ background:rgba(32,115,245,0.22); box-shadow:inset 0 0 0 1px var(--blue-500); }
+  .seg button.on[data-v="insuficiente"], .seg button.on[data-v="baja"]{ background:rgba(245,185,66,0.2); box-shadow:inset 0 0 0 1px var(--amber); }
+  .seg button.on[data-v="resistencia"], .seg button.on[data-v="no_lista"], .seg button.on[data-v="no_pertinente"], .seg button.on[data-v="alta"], .seg button.on[data-v="no"]{ background:rgba(255,107,107,0.2); box-shadow:inset 0 0 0 1px var(--coral); }
+
+  /* ---------- laboratorio conceptual ---------- */
+  .case-head{ display:grid; grid-template-columns:auto 1fr; gap:14px; align-items:start; margin-bottom:14px; }
+  .case-head .k{ font-family:var(--font-display); font-size:30px; font-weight:700; color:rgba(255,255,255,0.18); line-height:1; width:44px; }
+  .case-head .who{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--teal-400); margin-bottom:4px; }
+  .case-head .ctx{ font-size:13.5px; color:var(--ink-dim); line-height:1.6; margin:0; }
+  .elem{ display:grid; grid-template-columns:200px 1fr; gap:14px; padding:16px 0; border-top:1px solid var(--border-soft); }
+  .elem:first-child{ border-top:none; padding-top:0; }
+  .elem .en{ font-family:var(--font-mono); font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--teal-400); margin-bottom:4px; }
+  .elem .et{ font-weight:700; color:#fff; font-size:13.5px; }
+  .elem .eq{ font-size:12px; color:var(--ink-faint); margin-top:4px; line-height:1.5; }
+  .elem textarea{ min-height:74px; }
+  @media (max-width:760px){ .elem{ grid-template-columns:1fr; gap:8px; } }
+  .inv{ display:grid; grid-template-columns:auto 1fr; gap:10px 12px; align-items:start; padding:9px 0; border-bottom:1px dashed var(--border-soft); font-size:13px; }
+  .inv:last-child{ border-bottom:none; }
+  .inv .id{ font-family:var(--font-mono); font-size:10.5px; color:var(--teal-400); padding-top:2px; }
+  .inv .nm{ color:#fff; font-weight:600; }
+  .inv .nt{ color:var(--ink-dim); font-size:12.5px; margin-top:2px; }
+  .inv .nt .u{ color:var(--amber); font-style:italic; }
+  .inv.sens .nm::after{ content:' · sensible'; font-family:var(--font-mono); font-size:10px; color:var(--coral); font-weight:500; letter-spacing:0.06em; }
+  .chip.pick{ cursor:pointer; }
+  .chip.pick.on[data-risk]{ border-color:var(--amber); background:rgba(245,185,66,0.14); }
+  .seg button.on[data-v="s6"], .seg button.on[data-v="a6x"]{ background:rgba(255,107,107,0.2); box-shadow:inset 0 0 0 1px var(--coral); }
+  .chip.pick.on[data-bad]{ border-color:var(--coral); background:rgba(255,107,107,0.14); }
+  .cmp{ width:100%; border-collapse:separate; border-spacing:0; font-size:12.5px; }
+  .cmp th,.cmp td{ padding:9px 8px; border-bottom:1px solid var(--border-soft); text-align:left; vertical-align:top; }
+  .cmp th{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink-faint); font-weight:500; }
+  .cmp td.e{ color:#fff; font-weight:600; white-space:nowrap; }
+  .cmp td.y{ color:var(--ink); }
+  .cmp td.y .none{ color:var(--amber); font-style:italic; }
+  .cmp td.r{ color:var(--ink-dim); }
+  .cmp td.m{ text-align:center; white-space:nowrap; }
+  .pct{ font-family:var(--font-mono); font-size:11px; padding:3px 8px; border-radius:100px; border:1px solid; }
+  .pct.hi{ color:var(--teal-400); border-color:rgba(27,218,181,0.5); } .pct.mid{ color:var(--amber); border-color:rgba(245,185,66,0.5); } .pct.lo{ color:var(--coral); border-color:rgba(255,107,107,0.5); }
+  .mapgrid{ width:100%; border-collapse:separate; border-spacing:0; font-size:12px; }
+  .mapgrid th,.mapgrid td{ padding:8px 6px; border-bottom:1px solid var(--border-soft); text-align:center; }
+  .mapgrid th{ font-family:var(--font-mono); font-size:10px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink-faint); font-weight:500; }
+  .mapgrid td:first-child, .mapgrid th:first-child{ text-align:left; color:#fff; font-weight:600; }
+  .mapgrid .y{ display:inline-block; width:12px; height:12px; border-radius:50%; background:var(--blue-500); vertical-align:middle; }
+  .mapgrid .ref{ display:inline-block; width:14px; height:14px; border-radius:50%; border:2px solid var(--teal-400); vertical-align:middle; }
+  .mapgrid .both{ display:inline-block; width:14px; height:14px; border-radius:50%; border:2px solid var(--teal-400); background:var(--blue-500); vertical-align:middle; }
+  .logic{ font-size:13px; color:var(--ink); line-height:1.6; background:rgba(32,115,245,0.08); border:1px solid rgba(32,115,245,0.3); border-radius:12px; padding:12px 14px; margin-top:12px; }
+  .logic .lb{ color:var(--teal-400); font-family:var(--font-mono); font-weight:500; font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; display:block; margin-bottom:4px; }
+  .logic b{ color:#fff; }
+  .case-card .label{ margin-bottom:4px; }
+  .case-card h3{ font-size:15px; }
+  .case-card p{ margin:0; font-size:12.5px; color:var(--ink-dim); }
+  .mine-x{ margin-top:12px; }
+  textarea, input[type=text]{ color:var(--ink); }
+</style>
+</head>
+<body>
+<div class="noise" aria-hidden="true"></div>
+<header class="topbar">
+  <div class="topbar-row">
+    <div class="brand">
+      <img src="data:image/png;base64,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" alt="BIU Broward International University">
+      <div class="divider"></div>
+      <span class="tag">VIA7012 · Semana 2 · Laboratorio conceptual · Formativa, 0 %</span>
+    </div>
+    <div class="top-actions">
+      <button class="pill-btn" id="btnReset" title="Borrar todos los análisis y empezar de nuevo">Reiniciar</button>
+      <button class="pill-btn primary" id="btnDownloadTop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="6 11 12 17 18 11"/><path d="M4 21h16"/></svg>Ficha</button>
+    </div>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-tab="0"><span class="n">01</span>Fundamento teórico<span class="done"></span></button>
+    <button class="tab" data-tab="1"><span class="n">02</span>Instrucciones<span class="done"></span></button>
+    <button class="tab" data-tab="2"><span class="n">03</span>Escenario y datos<span class="done"></span></button>
+    <button class="tab" data-tab="3"><span class="n">04</span>Laboratorio conceptual<span class="done"></span></button>
+    <button class="tab" data-tab="4"><span class="n">05</span>Lectura de referencia<span class="done"></span></button>
+    <button class="tab" data-tab="5"><span class="n">06</span>Ensayo en tu contexto<span class="done"></span></button>
+    <button class="tab" data-tab="6"><span class="n">07</span>Ficha y evidencias<span class="done"></span></button>
+  </nav>
+</header>
+
+<main>
+<!-- ================= 01 FUNDAMENTO ================= -->
+<section class="panel active" data-panel="0">
+  <div class="eyebrow">Carpeta pedagógica · Laboratorio conceptual</div>
+  <h1 class="title">¿Qué tipo de IA responde al problema educativo?</h1>
+  <p class="lede">Antes de abrir una herramienta conviene entender la lógica del modelo que hay detrás: qué problema intenta resolver, con qué datos aprende, qué tipo de tarea ejecuta, qué decisión puede apoyar y qué decisión no debería tomar nunca por sí solo. Este laboratorio recorre siete situaciones educativas frecuentes y pide, para cada una, el mismo análisis de siete elementos. Lo que se evalúa es la coherencia del razonamiento, no el dominio técnico.</p>
+
+  <div class="card accent" style="margin-bottom:26px;">
+    <div class="label">Pregunta orientadora</div>
+    <p class="hero-q">"¿Qué situación requiere atención, qué datos la describen, qué tipo de tarea ejecutaría un modelo, qué decisión pedagógica apoyaría y quién debe interpretar lo que el sistema produce?"</p>
+  </div>
+
+  <h2>Seis lentes para razonar antes de la herramienta</h2>
+  <p class="muted" style="margin:0 0 16px; font-size:14px;">Cada elemento del análisis dialoga con una tradición de investigación. Lo que se evalúa es la capacidad de usarlas como criterios explícitos, no de citarlas.</p>
+
+  <div class="stack">
+    <div class="card theory"><div class="n">1</div><div>
+      <h3>Primero el problema educativo, después la tecnología</h3>
+      <div class="cite">Luckin, Holmes, Griffiths y Forcier (2016) · Selwyn (2019) · UNESCO (2021)</div>
+      <p>La pregunta inicial no es "qué puede hacer la IA" sino "qué situación educativa requiere atención y por qué". Luckin y colaboradores distinguen entre sistemas centrados en el aprendiz, en el docente y en el sistema; Selwyn advierte que muchas aplicaciones llegan como soluciones en busca de problema. La guía de UNESCO sitúa el valor de la IA en apoyar decisiones humanas, no en reemplazarlas. Un problema mal formulado produce un modelo que responde a la pregunta equivocada.</p>
+      <div class="apply"><b>Elemento 1 · Problema educativo</b>Formula la situación en términos de aprendizaje, permanencia o experiencia de los estudiantes, con el nivel de decisión que afecta: aula, tutoría, curso o institución.</div>
+    </div></div>
+    <div class="card theory"><div class="n">2</div><div>
+      <h3>Los datos: qué existe, qué mide realmente y qué cuesta usar</h3>
+      <div class="cite">Siemens (2013) · Romero y Ventura (2020) · Slade y Prinsloo (2013)</div>
+      <p>La analítica del aprendizaje y la minería de datos educativos trabajan con huellas: accesos, entregas, calificaciones, mensajes, respuestas. Cada huella es un indicador indirecto (un <em>proxy</em>) de algo más difícil de observar —comprensión, compromiso, dificultad— y conviene no confundir el proxy con el fenómeno. Slade y Prinsloo recuerdan que el estudiante es dueño de su información y que el consentimiento, la transparencia y la posibilidad de rectificar son condiciones, no detalles.</p>
+      <div class="apply"><b>Elemento 2 · Tipo de datos disponibles</b>Selecciona los datos pertinentes al problema, no todos los que existen. Pregunta qué mide cada uno, con qué cobertura y a qué costo para la privacidad.</div>
+    </div></div>
+    <div class="card theory"><div class="n">3</div><div>
+      <h3>Tipos de tarea y de aprendizaje automático</h3>
+      <div class="cite">Jordan y Mitchell (2015) · Romero y Ventura (2020)</div>
+      <p>Un modelo <strong>supervisado</strong> aprende de ejemplos etiquetados —casos del pasado cuyo resultado se conoce— y produce una <strong>clasificación</strong> (una categoría: riesgo alto o bajo, respuesta correcta o incorrecta) o una <strong>regresión</strong> (un número: nota estimada, probabilidad). Un modelo <strong>no supervisado</strong> no tiene etiquetas: busca estructura en los datos, por ejemplo <strong>agrupamientos</strong> o <strong>patrones</strong> recurrentes, que después alguien debe interpretar. Los <strong>sistemas de recomendación</strong> combinan ambos enfoques para sugerir recursos por similitud. El <strong>procesamiento de lenguaje natural</strong> y la <strong>IA generativa</strong> trabajan con texto. Y a veces basta una <strong>analítica descriptiva</strong> o un conjunto de <strong>reglas</strong>: no todo problema necesita un modelo que aprenda. "Predecir" es un propósito; clasificación o regresión son la forma de hacerlo.</p>
+      <div class="apply"><b>Elementos 3 y 4 · Tipo de tarea y enfoque de IA</b>Un enfoque supervisado exige etiquetas históricas: si no existen ejemplos con resultado conocido, no hay de qué aprender. Verifica siempre esa condición antes de elegirlo.</div>
+    </div></div>
+    <div class="card theory"><div class="n">4</div><div>
+      <h3>Valor pedagógico: qué decisión apoya y a quién sirve</h3>
+      <div class="cite">Arnold y Pistilli (2012) · Holmes, Bialik y Fadel (2019)</div>
+      <p>El sistema Course Signals de Purdue mostró que una alerta temprana solo tiene valor cuando alguien actúa sobre ella y el estudiante recibe un mensaje que puede usar. Holmes y colaboradores insisten en que la IA educativa debe evaluarse por la decisión pedagógica que mejora —a quién acompañar, qué reenseñar, qué recurso sugerir— y no por la sofisticación del modelo. Un resultado que nadie puede traducir en acción es ruido.</p>
+      <div class="apply"><b>Elemento 5 · Valor pedagógico</b>Nombra la decisión concreta que el resultado permitiría tomar mejor o antes, y quién la toma.</div>
+    </div></div>
+    <div class="card theory"><div class="n">5</div><div>
+      <h3>Limitaciones: correlación, sesgo y lo que no debe automatizarse</h3>
+      <div class="cite">Baker y Hawn (2022) · Slade y Prinsloo (2013)</div>
+      <p>Los modelos aprenden regularidades del pasado; si el pasado fue desigual, el modelo reproduce la desigualdad. Baker y Hawn documentan sesgos algorítmicos en educación por origen, género, lengua, discapacidad y condición socioeconómica, muchas veces porque esos atributos —o sus sustitutos— entraron como predictores. Además, una correlación no es una causa: que los estudiantes que entran poco a la plataforma abandonen más no significa que entrar más evite el abandono. Por eso hay decisiones que un sistema no debería tomar solo: etiquetar a una persona ante otros, asignar una calificación, cerrar una ruta o elegir una intervención sin contexto.</p>
+      <div class="apply"><b>Elemento 6 · Limitación</b>Identifica qué no debe decidir automáticamente el sistema en ese caso. "Nada, puede automatizarse" nunca es la respuesta.</div>
+    </div></div>
+    <div class="card theory"><div class="n">6</div><div>
+      <h3>Supervisión humana: quién interpreta y valida</h3>
+      <div class="cite">Molenaar (2022) · UNESCO (2021)</div>
+      <p>Molenaar propone pensar la relación humano-IA como un continuo de control compartido, en el que la automatización cambia según la tarea y las consecuencias. El resultado de un modelo es una hipótesis que alguien con conocimiento del contexto —el docente, la tutoría, un comité, el propio estudiante acompañado— debe interpretar, contrastar y, si corresponde, descartar. La supervisión no es un trámite al final: define quién responde por lo que el sistema sugiere.</p>
+      <div class="apply"><b>Elemento 7 · Supervisión humana</b>Elige a quien tiene el contexto y la responsabilidad para validar el resultado antes de que produzca una consecuencia para el estudiante.</div>
+    </div></div>
+  </div>
+
+  <h2 style="margin-top:28px;">Referencias de la carpeta</h2>
+  <div class="card refs"><ul id="refsList"></ul></div>
+  <div class="nav-row"><span></span><button class="pill-btn primary goto" data-goto="1">Instrucciones →</button></div>
+</section>
+
+<!-- ================= 02 INSTRUCCIONES ================= -->
+<section class="panel" data-panel="1">
+  <div class="eyebrow">Instrucciones de uso</div>
+  <h1 class="title">Cómo se recorre el laboratorio</h1>
+  <p class="lede">Asumes el rol de asesor o asesora pedagógica de una institución que quiere "usar inteligencia artificial" para atender siete situaciones educativas. Para cada situación completarás el mismo análisis de siete elementos. El laboratorio contrasta después tus decisiones con una lectura de referencia y señala incoherencias: por ejemplo, un enfoque supervisado sin datos etiquetados, o datos sensibles usados como predictores.</p>
+  <div class="grid g2" style="margin-bottom:18px;">
+    <div class="card">
+      <div class="label">Los siete elementos del análisis</div>
+      <div class="flow-strip"><span class="fs">Problema educativo</span><span class="ar">→</span><span class="fs">Datos disponibles</span><span class="ar">→</span><span class="fs">Tipo de tarea</span><span class="ar">→</span><span class="fs">Enfoque de IA</span><span class="ar">→</span><span class="fs">Valor pedagógico</span><span class="ar">→</span><span class="fs">Limitación</span><span class="ar">→</span><span class="fs">Supervisión humana</span></div>
+    </div>
+    <div class="card accent">
+      <div class="label">Lo que el laboratorio no hace</div>
+      <p style="margin:0; font-size:13.5px; color:var(--ink);">No entrena modelos ni usa herramientas. Tampoco hay una única respuesta: varios casos admiten más de un tipo de tarea o enfoque, y la referencia lo reconoce. Lo que se mide es la <strong>coincidencia con la lógica de referencia</strong> y la ausencia de incoherencias, no el acierto técnico.</p>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:18px;">
+    <div class="label">Pasos</div>
+    <ol class="steps">
+      <li><b>Lee el fundamento teórico</b> (01) y ubica qué lente corresponde a cada elemento.</li>
+      <li><b>Estudia el escenario y el inventario de datos</b> (03): doce fuentes con notas sobre cobertura, calidad y sensibilidad. No todas sirven para todo.</li>
+      <li><b>Recorre los siete casos</b> (04). Para cada uno: describe el problema, selecciona los datos, elige el tipo de tarea y el enfoque, marca las decisiones que apoyaría, señala lo que no debe automatizarse, asigna la supervisión y justifica en pocas líneas.</li>
+      <li><b>Contrasta con la lectura de referencia</b> (05): coincidencia por elemento, alertas de incoherencia y un mapa que ubica tus siete casos por enfoque.</li>
+      <li><b>Ensaya el análisis en tu contexto</b> (06): una situación de tu institución con los mismos siete elementos y una pregunta previa: ¿requiere IA? Es práctica, no tu diagnóstico R2.</li>
+      <li><b>Descarga la ficha</b> (07) con tu declaración de uso de IA y tu reflexión.</li>
+    </ol>
+  </div>
+  <div class="card" style="margin-bottom:18px;">
+    <div class="label">Relación con la evidencia calificada R2 y el Syllabus</div>
+    <p style="margin:0 0 10px; font-size:13.5px; color:var(--ink);">La asignación de la Semana 2 (R2, 10 %) pide un diagnóstico de una necesidad educativa real, con ocho apartados y fuentes. Este laboratorio entrena el razonamiento con siete casos ficticios y una referencia para contrastar. No sustituye ninguna parte de R2, y el ensayo de la pestaña 06 no es un borrador del diagnóstico.</p>
+    <p class="muted" style="margin:0; font-size:13px;">Resultados de aprendizaje que ejercita: SLO 2.2 (aprendizaje supervisado, no supervisado y por refuerzo aplicado a problemas educativos), SLO 2.3 (oportunidades y limitaciones), SLO 2.4 (interpretar datos y evidencia para identificar necesidades) y SLO 2.5 (equidad, privacidad, sesgo y responsabilidad humana). No cubre SLO 2.1 (diferenciar IA, ML, DL y Learning Analytics) más que de forma indirecta. La alineación SLO–CLO–PLO oficial está en el Syllabus.</p>
+  </div>
+  <div class="grid g3">
+    <div class="card tight"><div class="label">Guardado</div><p style="margin:0; font-size:13px; color:var(--ink);">El avance se guarda en este navegador. "Reiniciar" borra todo tras confirmar.</p></div>
+    <div class="card tight"><div class="label">Duración estimada</div><p style="margin:0; font-size:13px; color:var(--ink);">90 a 120 minutos en varias sesiones (estimación del diseño, no medida con estudiantes).</p></div>
+    <div class="card tight warn"><div class="label">Datos reales y uso de IA</div><p style="margin:0; font-size:13px; color:var(--ink);">No incluyas datos identificables de estudiantes reales. Puedes usar IA generativa con espíritu crítico, salvo que el anuncio de la semana indique otra cosa: verifica lo que produjo, evalúalo y declara su uso en la ficha.</p></div>
+  </div>
+  <div class="nav-row"><button class="pill-btn goto" data-goto="0">← Fundamento</button><button class="pill-btn primary goto" data-goto="2">Ver el escenario →</button></div>
+</section>
+
+<!-- ================= 03 ESCENARIO ================= -->
+<section class="panel" data-panel="2">
+  <div class="eyebrow">Escenario institucional</div>
+  <h1 class="title">Instituto Superior Valle Azul · Programa "Datos para Acompañar"</h1>
+  <p class="lede">Un instituto de educación superior con <strong>6 200 estudiantes</strong> en programas presenciales y virtuales recibió fondos para "incorporar inteligencia artificial al acompañamiento académico". La vicerrectoría reunió siete situaciones que distintas áreas quieren atender y te pidió, como asesor o asesora pedagógica, que determines <strong>qué tipo de enfoque de IA sería pertinente para cada una</strong> antes de evaluar herramientas o proveedores.</p>
+  <div class="grid g3" style="margin-bottom:18px;">
+    <div class="card tight"><div class="label">Lo que pide la vicerrectoría</div><p style="margin:0; font-size:13px; color:var(--ink);">"Una recomendación por situación: qué haría la IA, con qué datos, para apoyar qué decisión y bajo qué control."</p></div>
+    <div class="card tight"><div class="label">Lo que ya existe</div><p style="margin:0; font-size:13px; color:var(--ink);">Un LMS con cuatro años de registros, un sistema académico con historial de calificaciones y matrícula, y una unidad de tutoría con tres personas.</p></div>
+    <div class="card tight warn"><div class="label">Lo que no se sabe</div><p style="margin:0; font-size:13px; color:var(--ink);">No hay política de uso de datos ni comité de ética. Ningún docente ha sido consultado sobre qué haría con un resultado automático.</p></div>
+  </div>
+
+  <h2>Inventario de datos disponibles</h2>
+  <p class="muted" style="margin:0 0 14px; font-size:14px;">Doce fuentes. Las notas en ámbar señalan limitaciones de cobertura o calidad; las marcadas como sensibles exigen una justificación especial antes de entrar en cualquier modelo.</p>
+  <div class="card" style="margin-bottom:22px;" id="inventory"></div>
+
+  <h2>Las siete situaciones</h2>
+  <p class="muted" style="margin:0 0 14px; font-size:14px;">Cada caso lo plantea un área distinta, con sus propias expectativas sobre lo que la IA "debería" hacer. Parte del trabajo es traducir esa expectativa a un problema formulable.</p>
+  <div class="grid g2" id="caseCards"></div>
+  <div class="nav-row"><button class="pill-btn goto" data-goto="1">← Instrucciones</button><button class="pill-btn primary goto" data-goto="3">Ir al laboratorio →</button></div>
+</section>
+
+<!-- ================= 04 LABORATORIO ================= -->
+<section class="panel" data-panel="3">
+  <div class="eyebrow">Laboratorio conceptual</div>
+  <h1 class="title">Siete casos, un mismo análisis</h1>
+  <div class="stepper" id="stepper"></div>
+  <div id="labBody"></div>
+</section>
+
+<!-- ================= 05 LECTURA DE REFERENCIA ================= -->
+<section class="panel" data-panel="4">
+  <div class="eyebrow">Lectura de referencia</div>
+  <h1 class="title">Tu análisis frente a la lógica de referencia</h1>
+  <p class="lede">La referencia no es la única respuesta válida: donde un caso admite varios tipos de tarea o enfoques, se aceptan. Si discrepas de la referencia con buenos argumentos, escríbelos: es parte del trabajo doctoral. La coincidencia resume cuánto se alinea tu análisis con esa lectura; las alertas señalan incoherencias que convendría revisar antes de usar cualquier herramienta.</p>
+  <div class="grid g3" style="margin-bottom:22px;" id="kpis"></div>
+  <div class="card" style="margin-bottom:22px;">
+    <div class="label">Mapa de enfoques · tus siete casos</div>
+    <p class="muted" style="font-size:13px; margin:0 0 12px;">El punto azul es tu elección; el anillo turquesa, los enfoques aceptados por la referencia. Un punto dentro del anillo indica coincidencia.</p>
+    <div class="mtx-wrap" id="approachMap"></div>
+  </div>
+  <div class="stack" id="results"></div>
+  <div class="nav-row"><button class="pill-btn goto" data-goto="3">← Laboratorio</button><button class="pill-btn primary goto" data-goto="5">Ensayar en mi contexto →</button></div>
+</section>
+
+<!-- ================= 06 TRANSFERENCIA ================= -->
+<section class="panel" data-panel="5">
+  <div class="eyebrow">Ensayo en tu contexto</div>
+  <h1 class="title">El mismo análisis, tu problema</h1>
+  <p class="lede">Aplica los siete elementos a una situación educativa de tu institución o práctica, de forma breve. La primera pregunta decide si el resto del análisis tiene sentido. Es un ensayo de razonamiento y no reemplaza el diagnóstico de R2.</p>
+  <div class="card warn" style="margin-bottom:14px;">
+    <div class="label">Puente hacia R2 (Diagnóstico de necesidad educativa, 10 %)</div>
+    <p style="margin:0 0 8px; font-size:13px; color:var(--ink);">Los siete elementos de este ensayo cubren solo parte de los ocho apartados que el Syllabus pide en R2: problema, datos, posible aplicación de IA, valor, limitaciones y supervisión humana. R2 exige además la descripción del contexto, la evidencia que permitiría verificar el problema, una pregunta orientadora y fuentes en APA 7.</p>
+    <p class="note" style="margin:0;">Para revisar tu borrador contra la rúbrica, usa el autoverificador de R2 en la Guía interactiva. No pegues aquí texto de tu diagnóstico.</p>
+  </div>
+  <div class="card" style="margin-bottom:14px;">
+    <div class="grid g2" style="gap:12px;">
+      <div class="field"><span class="fl">Institución o contexto (sin datos identificables)</span><input type="text" data-ref="t_ctx" placeholder="Ej.: programa virtual de formación docente, 400 estudiantes"></div>
+      <div class="field"><span class="fl">Situación que requiere atención</span><input type="text" data-ref="t_sit" placeholder="Ej.: entregas tardías crecientes en el segundo módulo"></div>
+    </div>
+  </div>
+  <div class="card accent" style="margin-bottom:14px;">
+    <div class="label">Pregunta decisiva</div>
+    <p class="hero-q" style="margin-bottom:12px;">¿Requiere realmente un modelo de IA esta situación?</p>
+    <div class="seg" data-kind="transfer" data-field="needs" id="transferSeg" role="group" aria-label="¿Requiere realmente un modelo de IA esta situación?"><button type="button" data-v="si" aria-pressed="false">Sí: hay un patrón que un modelo puede aprender y una decisión que apoyar</button><button type="button" data-v="no" aria-pressed="false">No: una analítica descriptiva o una intervención pedagógica basta</button></div>
+    <p class="note" style="margin:10px 0 0;">Ambas respuestas exigen fundamentación. Un informe que concluye "no requiere IA" es un resultado válido del laboratorio.</p>
+  </div>
+  <div class="card" style="margin-bottom:14px;" id="transferTable"></div>
+  <div class="card"><div class="field"><span class="fl">Fundamentación de la respuesta a la pregunta decisiva</span><textarea data-ref="t_why" placeholder="Por qué sí requiere un modelo (qué aprendería, de qué ejemplos) o por qué no (qué basta para tomar la decisión)"></textarea></div></div>
+  <div class="nav-row"><button class="pill-btn goto" data-goto="4">← Lectura de referencia</button><button class="pill-btn primary goto" data-goto="6">Preparar la ficha →</button></div>
+</section>
+
+<!-- ================= 07 INFORME ================= -->
+<section class="panel" data-panel="6">
+  <div class="eyebrow">Informe y evidencias</div>
+  <h1 class="title">Descarga la ficha del laboratorio</h1>
+  <p class="lede">El archivo reúne los siete análisis con su lectura de referencia, tus discrepancias razonadas, las alertas de coherencia, tu ensayo en contexto, la declaración de uso de IA y la reflexión. Es una ficha de práctica de 0 % y no sustituye ninguna evidencia calificada.</p>
+  <div class="grid g2" style="margin-bottom:18px;">
+    <div class="card"><div class="grid" style="gap:12px;">
+      <div class="field"><span class="fl">Nombre del doctorando</span><input type="text" data-ref="nombre" placeholder="Nombre y apellido"></div>
+      <div class="field"><span class="fl">Programa / cohorte (opcional)</span><input type="text" data-ref="programa" placeholder="Ej.: Doctorado en Educación Virtual — cohorte ..."></div>
+      <div class="field"><span class="fl">Declaración de uso de IA (obligatoria): si usaste alguna herramienta, cuál y para qué; si no, escríbelo</span><textarea data-ref="iaDecl" placeholder="Ej.: No usé IA generativa en este laboratorio."></textarea></div>
+      <div class="field"><span class="fl">Reflexión: qué cambió en cómo decides si un problema educativo requiere IA</span><textarea data-ref="reflexion" placeholder="Cuatro a ocho líneas."></textarea></div>
+    </div></div>
+    <div class="card"><div class="label">Estado del informe</div><div id="checklist" style="font-size:13.5px; line-height:1.9;"></div></div>
+  </div>
+  <div class="row">
+    <button class="pill-btn primary" id="btnDownload" style="padding:13px 22px; font-size:14px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="6 11 12 17 18 11"/><path d="M4 21h16"/></svg>Descargar ficha (.html)</button>
+    <span class="note">Cada descarga refleja el estado actual de tus análisis. Es una ficha de práctica.</span>
+  </div>
+  <div class="nav-row"><button class="pill-btn goto" data-goto="5">← Ensayo en contexto</button><span></span></div>
+</section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+var STORE_KEY='via7012_s2_lab_conceptual_v1';
+
+/* ================= DATA ================= */
+var DATA=[
+ {id:'d1',nm:'Registros del LMS (accesos, tiempo, recursos abiertos)',nt:'Semanal, cuatro años. Mide actividad en plataforma, [u]no comprensión[/u].'},
+ {id:'d2',nm:'Entregas de tareas (fechas, retrasos, faltantes)',nt:'Completo para cursos virtuales; [u]parcial en presenciales[/u].'},
+ {id:'d3',nm:'Calificaciones parciales y finales históricas',nt:'Tres años, todos los programas. Resultado conocido por estudiante y curso.'},
+ {id:'d4',nm:'Historial de matrícula, retiros y abandono',nt:'Cinco años. Indica quién abandonó y cuándo: [u]sin el motivo[/u].'},
+ {id:'d5',nm:'Participación en foros (mensajes, respuestas, texto)',nt:'Solo cursos virtuales. Incluye el texto completo de los mensajes.'},
+ {id:'d6',nm:'Respuestas abiertas a cuestionarios y exámenes (texto)',nt:'Dos cursos tienen ≈1 800 respuestas ya calificadas por docentes con rúbrica; [u]el resto, sin calificar[/u].'},
+ {id:'d7',nm:'Resultados ítem por ítem de las evaluaciones',nt:'Qué preguntas falla cada estudiante, por tema. Disponible en cursos con cuestionarios en línea.'},
+ {id:'d8',nm:'Datos sociodemográficos (edad, género, zona, beca)',nt:'Completo. [u]Usarlos como predictores reproduce desigualdades[/u]; sirven para auditar si el modelo trata igual a todos.',sens:true},
+ {id:'d9',nm:'Asistencia a sesiones sincrónicas',nt:'Registrada automáticamente; [u]no distingue conexión de atención[/u].'},
+ {id:'d10',nm:'Encuesta de satisfacción y autoeficacia',nt:'Semestral; [u]18 % de respuesta[/u]. Cobertura insuficiente para modelar.'},
+ {id:'d11',nm:'Catálogo de recursos (tema, nivel, formato) y valoraciones',nt:'Etiquetado completo; [u]pocas valoraciones de estudiantes[/u].'},
+ {id:'d12',nm:'Tickets de soporte y tutoría (motivo, fecha)',nt:'Dos años. Señal temprana de dificultad, [u]solo de quien pide ayuda[/u].'}
+];
+var TASKS={t1:'Clasificación',t2:'Regresión',t3:'Agrupamiento',t4:'Recomendación',t5:'Detección de patrones o anomalías',t6:'Procesamiento de lenguaje natural',t7:'Analítica descriptiva (sin modelo que aprenda)'};
+var APPR={a1:'Supervisado',a2:'No supervisado',a3:'Semisupervisado',a4:'Por refuerzo',a5:'IA generativa (LLM)',a6:'Reglas o umbrales (sin aprendizaje)',a7:'Híbrido'};
+var VALS={v1:'Priorizar a quién contactar o acompañar',v2:'Ajustar la enseñanza o el diseño del curso',v3:'Asignar recursos o apoyos',v4:'Retroalimentar u orientar al estudiante',v5:'Formar grupos de trabajo',v6:'Calificar o certificar el logro',v7:'Sancionar o restringir'};
+var LIMS={l1:'Etiquetar al estudiante ante otros o cerrar expectativas sobre él',l2:'Asignar la calificación o certificar el logro',l3:'Negar acceso, imponer una ruta o excluir',l4:'Elegir la intervención sin conocer el contexto del estudiante',l5:'Afirmar causas a partir de correlaciones',l6:'Nada: el sistema puede decidir por completo'};
+var SUPS={s1:'Docente del curso',s2:'Tutoría, consejería o bienestar',s3:'Coordinación o comité académico',s4:'Analista de datos junto con el docente',s5:'El propio estudiante, con acompañamiento',s6:'Nadie: el sistema es suficientemente confiable'};
+
+var CASES=[
+ {k:'1',short:'Riesgo de abandono',title:'Estudiantes con riesgo de abandono',who:'Lo plantea Tutoría',ctx:'"Cuando nos enteramos de que alguien dejó de entrar ya es tarde. Queremos saber en la semana 3 quién va a abandonar para llamarlo." La unidad tiene tres personas para 6 200 estudiantes.',expect:'Tutoría espera una lista de nombres con un semáforo.',
+  ref:{datos:['d1','d2','d4','d9','d12'],datosOpt:['d3'],labels:['d4'],tarea:['t1'],tareaOpt:['t2'],enf:['a1'],enfOpt:['a7'],valor:['v1','v3'],lim:['l1','l4','l5'],sup:['s2'],supOpt:['s4','s1']},
+  logic:'Hay ejemplos históricos con resultado conocido (quién abandonó: d4), así que un modelo <b>supervisado de clasificación</b> puede aprender qué señales tempranas (accesos, entregas, asistencia, tickets) se asociaron con abandono. Produce una probabilidad, no un destino. Course Signals (Arnold y Pistilli, 2012) mostró que la alerta solo tiene valor si alguien contacta al estudiante con un mensaje útil, aunque sus cifras de retención fueron cuestionadas por confundir correlación con causalidad (Caulfield, 2013): otra razón para tratar la alerta como hipótesis. Por eso la decisión que apoya es <b>a quién acompañar primero</b> y la supervisión corresponde a <b>Tutoría</b>. Los datos sociodemográficos no deben entrar como predictores (Baker y Hawn, 2022): sirven para auditar si el modelo falla más con algún grupo. El sistema no debe etiquetar, elegir la intervención ni explicar la causa: la correlación entre inactividad y abandono no dice por qué.'},
+ {k:'2',short:'Agrupamiento por patrones',title:'Agrupamiento de estudiantes según patrones de aprendizaje',who:'Lo plantea la Dirección de Educación Virtual',ctx:'"Sabemos que no todos estudian igual: unos entran de madrugada y entregan tarde, otros solo leen, otros viven en el foro. Queremos agruparlos para diseñar mejor los cursos."',expect:'La dirección espera "perfiles de estudiante" para asignar rutas distintas.',
+  ref:{datos:['d1','d2','d5','d7','d9'],datosOpt:['d3'],labels:[],tarea:['t3'],tareaOpt:['t5'],enf:['a2'],enfOpt:[],valor:['v2','v5'],lim:['l1','l3','l5'],sup:['s1'],supOpt:['s4']},
+  logic:'No existe una etiqueta previa de "tipo de estudiante": nadie sabe de antemano cuántos grupos hay ni cuáles son. Es la situación típica del <b>agrupamiento no supervisado</b>: el algoritmo encuentra conjuntos de estudiantes con conductas parecidas y el docente debe interpretar qué significan. Los grupos describen conductas en un momento, no identidades: convertirlos en "rutas obligatorias" o en etiquetas fijas contradice la naturaleza del método y reproduce el problema de los estilos de aprendizaje. El valor está en <b>rediseñar el curso</b> y, si acaso, en formar grupos de trabajo revisables; la interpretación es del <b>docente</b>, con apoyo del analista.'},
+ {k:'3',short:'Dificultades recurrentes',title:'Identificación de dificultades recurrentes',who:'Lo plantea el área de Matemáticas',ctx:'"Año tras año los estudiantes se traban en lo mismo, pero solo lo sabemos por intuición. Queremos saber qué conceptos fallan de forma sistemática y en qué momento."',expect:'El área espera un ranking de temas difíciles por curso.',
+  ref:{datos:['d7','d6','d5','d12'],datosOpt:['d3'],labels:[],tarea:['t5'],tareaOpt:['t3','t6','t7'],enf:['a2'],enfOpt:['a7','a6'],valor:['v2','v4'],lim:['l5','l4'],sup:['s1'],supOpt:['s3']},
+  logic:'La pregunta es sobre <b>patrones</b> en los errores, no sobre predecir a una persona. Con resultados ítem por ítem (d7) basta a menudo una analítica descriptiva o la detección de patrones recurrentes; con respuestas abiertas (d6) y mensajes del foro (d5), el procesamiento de lenguaje puede agrupar errores conceptuales parecidos sin etiquetas previas. Es un uso <b>no supervisado o descriptivo</b>, orientado al <b>rediseño de la enseñanza</b>. El sistema identifica dónde se concentran los fallos; <b>por qué</b> ocurren lo decide el docente que conoce el contenido y el grupo.'},
+ {k:'4',short:'Predicción de rendimiento',title:'Predicción de rendimiento',who:'Lo plantea Registro Académico',ctx:'"Queremos estimar la nota final de cada estudiante a mitad del curso para avisarle a tiempo y para que los docentes ajusten." Algunos docentes temen que la estimación se convierta en la nota.',expect:'Registro espera un número por estudiante en la semana 8.',
+  ref:{datos:['d1','d2','d3','d7','d9'],datosOpt:['d12'],labels:['d3'],tarea:['t2'],tareaOpt:['t1'],enf:['a1'],enfOpt:[],valor:['v4','v1'],lim:['l2','l1','l5'],sup:['s1'],supOpt:['s4']},
+  logic:'Existe el resultado histórico (calificaciones finales: d3), así que un modelo <b>supervisado</b> puede aprender a estimar la nota a partir de señales de medio curso. Si la salida es un número, es <b>regresión</b>; si es "en riesgo de reprobar / no", es clasificación: ambas son válidas y la elección depende de la decisión que se quiera apoyar. Esa decisión es <b>retroalimentar a tiempo</b> al estudiante y al docente, nunca <b>fijar la calificación</b>: la estimación es una hipótesis sobre el pasado de otros, no una evaluación del aprendizaje de esta persona. La interpreta el <b>docente</b>.'},
+ {k:'5',short:'Recomendación de recursos',title:'Recomendación personalizada de recursos',who:'Lo plantea la Biblioteca y el Centro de Recursos',ctx:'"Tenemos 3 400 recursos etiquetados y casi nadie los usa. Queremos que cada estudiante reciba sugerencias según lo que está estudiando y lo que le cuesta."',expect:'La biblioteca espera "un Netflix de recursos académicos".',
+  ref:{datos:['d1','d7','d11'],datosOpt:['d2'],labels:[],tarea:['t4'],tareaOpt:[],enf:['a7'],enfOpt:['a1','a2'],valor:['v4','v3'],lim:['l3','l4'],sup:['s5'],supOpt:['s1']},
+  logic:'Un <b>sistema de recomendación</b> combina dos lógicas: similitud de contenido (las etiquetas del catálogo, d11, frente a lo que el estudiante está estudiando y falla, d7) y filtrado colaborativo (lo que usaron estudiantes parecidos, d1). Por eso suele ser <b>híbrido</b>, con partes supervisadas y no supervisadas. Con pocas valoraciones, el inicio es frío y las sugerencias deben presentarse como opciones, no como ruta obligatoria. El valor es <b>orientar al estudiante</b>; la supervisión principal es <b>el propio estudiante</b>, que acepta o descarta, con el docente curando el catálogo.'},
+ {k:'6',short:'Clasificación de respuestas',title:'Clasificación automatizada de respuestas',who:'Lo plantea un equipo docente',ctx:'"Corregimos 1 800 respuestas abiertas por semestre. Queremos que el sistema las clasifique según la rúbrica para devolver retroalimentación más rápido." Hay dos cursos con respuestas ya calificadas.',expect:'El equipo espera que el sistema "ponga la nota".',
+  ref:{datos:['d6'],datosOpt:['d7'],labels:['d6'],tarea:['t6'],tareaOpt:['t1'],enf:['a1'],enfOpt:['a5','a7'],valor:['v4','v2'],lim:['l2'],sup:['s1'],supOpt:[]},
+  logic:'Las ≈1 800 respuestas ya calificadas con rúbrica son <b>etiquetas</b>: permiten entrenar un clasificador <b>supervisado</b> de texto (procesamiento de lenguaje natural) que asigne cada respuesta nueva a un nivel de la rúbrica. Un modelo generativo puede hacerlo sin entrenamiento, pero con menos control sobre sus criterios. En ambos casos la salida es una <b>sugerencia de nivel</b> que acelera la retroalimentación; <b>la calificación la asigna el docente</b>, que además debe revisar las respuestas donde el modelo duda. Automatizar la nota convierte una herramienta de apoyo en un evaluador sin responsabilidad.'},
+ {k:'7',short:'Patrones de participación',title:'Detección de patrones de participación',who:'Lo plantea Bienestar Estudiantil',ctx:'"En los foros hay estudiantes que nunca responden a nadie, otros que concentran la conversación y grupos que solo hablan entre sí. Queremos verlo antes de que termine el curso."',expect:'Bienestar espera identificar a "los aislados" para intervenir.',
+  ref:{datos:['d5','d1','d9'],datosOpt:[],labels:[],tarea:['t5'],tareaOpt:['t3','t7'],enf:['a2'],enfOpt:['a6','a7'],valor:['v2','v1'],lim:['l1','l4'],sup:['s1'],supOpt:['s2']},
+  logic:'La estructura de la conversación (quién responde a quién, cuánto, cuándo) es un <b>patrón</b> que se describe con análisis de redes y detección de anomalías o agrupamientos: <b>no supervisado o descriptivo</b>, sin etiquetas. El resultado es un mapa de la participación, útil para que el <b>docente ajuste la moderación</b> y, con cuidado, para que Tutoría acompañe. Nombrar públicamente a "los aislados" o intervenir sin conocer por qué alguien participa poco —trabajo, conectividad, preferencia— convierte un dato descriptivo en una etiqueta.'}
+];
+
+var REFS=[
+ 'Arnold, K. E., y Pistilli, M. D. (2012). Course Signals at Purdue: Using learning analytics to increase student success. <em>Proceedings of the 2nd International Conference on Learning Analytics and Knowledge</em>, 267–270. https://doi.org/10.1145/2330601.2330666',
+ 'Baker, R. S., y Hawn, A. (2022). Algorithmic bias in education. <em>International Journal of Artificial Intelligence in Education, 32</em>, 1052–1092. https://doi.org/10.1007/s40593-021-00285-9',
+ 'Caulfield, M. (2013, 26 de septiembre). A simple, less mathematical way to understand the Course Signals issue. <em>Hapgood</em> (blog). https://hapgood.us/2013/09/26/a-simple-less-mathematical-way-to-understand-the-course-signals-issue/',
+ 'Holmes, W., Bialik, M., y Fadel, C. (2019). <em>Artificial intelligence in education: Promises and implications for teaching and learning.</em> Center for Curriculum Redesign.',
+ 'Jordan, M. I., y Mitchell, T. M. (2015). Machine learning: Trends, perspectives, and prospects. <em>Science, 349</em>(6245), 255–260. https://doi.org/10.1126/science.aaa8415',
+ 'Luckin, R., Holmes, W., Griffiths, M., y Forcier, L. B. (2016). <em>Intelligence unleashed: An argument for AI in education.</em> Pearson.',
+ 'Molenaar, I. (2022). Towards hybrid human-AI learning technologies. <em>European Journal of Education, 57</em>(4), 632–645. https://doi.org/10.1111/ejed.12527',
+ 'Romero, C., y Ventura, S. (2020). Educational data mining and learning analytics: An updated survey. <em>WIREs Data Mining and Knowledge Discovery, 10</em>(3), e1355. https://doi.org/10.1002/widm.1355',
+ 'Selwyn, N. (2019). <em>Should robots replace teachers? AI and the future of education.</em> Polity.',
+ 'Siemens, G. (2013). Learning analytics: The emergence of a discipline. <em>American Behavioral Scientist, 57</em>(10), 1380–1400. https://doi.org/10.1177/0002764213498851',
+ 'Slade, S., y Prinsloo, P. (2013). Learning analytics: Ethical issues and dilemmas. <em>American Behavioral Scientist, 57</em>(10), 1510–1529. https://doi.org/10.1177/0002764213479366',
+ 'UNESCO. (2021). <em>AI and education: Guidance for policy-makers.</em> UNESCO.'
+];
+
+/* ================= STATE ================= */
+var S;
+function freshCase(){ return {disc:'',problema:'',datos:[],tarea:null,enfoque:null,valor:[],lim:[],sup:null,just:''}; }
+function freshState(){ return {phase:0,cases:CASES.map(freshCase),transfer:{needs:null,t_ctx:'',t_sit:'',t_why:'',tarea:null,enfoque:null,sup:null,p1:'',p2:'',p5:'',p6:''},refl:{nombre:'',programa:'',iaDecl:'',reflexion:''}}; }
+function load(){ S=freshState(); try{ var raw=window.localStorage.getItem(STORE_KEY); if(raw){ var o=JSON.parse(raw); if(o&&o.cases&&o.cases.length===7){ S.phase=o.phase||0; o.cases.forEach(function(c,i){ Object.keys(S.cases[i]).forEach(function(k){ if(c[k]!==undefined) S.cases[i][k]=c[k]; }); }); Object.keys(S.transfer).forEach(function(k){ if(o.transfer&&o.transfer[k]!==undefined) S.transfer[k]=o.transfer[k]; }); Object.keys(S.refl).forEach(function(k){ if(o.refl&&o.refl[k]!==undefined) S.refl[k]=o.refl[k]; }); } } }catch(e){} }
+function save(){ try{ window.localStorage.setItem(STORE_KEY,JSON.stringify(S)); }catch(e){} }
+
+/* ================= HELPERS ================= */
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function dimHTML(s){ return esc(s).replace(/\[u\]/g,'<span class="u">').replace(/\[\/u\]/g,'</span>'); }
+function $(sel,ctx){ return (ctx||document).querySelector(sel); }
+function $$(sel,ctx){ return Array.prototype.slice.call((ctx||document).querySelectorAll(sel)); }
+function toast(msg){ var t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(function(){ t.classList.remove('show'); },2400); }
+var SEGL={tarea:'Tipo de tarea',enfoque:'Enfoque de IA',sup:'Supervisión humana'};
+function seg(kind,id,field,dict,cur){ var h='<div class="seg" data-kind="'+kind+'" data-id="'+id+'" data-field="'+field+'" role="group" aria-label="'+esc(SEGL[field]||field)+'">'; Object.keys(dict).forEach(function(o){ h+='<button type="button" data-v="'+o+'" aria-pressed="'+(cur===o)+'" class="'+(cur===o?'on':'')+'">'+esc(dict[o])+'</button>'; }); return h+'</div>'; }
+function chips(kind,id,field,dict,cur,riskSet,badSet){ var h='<div class="tag-group">'; Object.keys(dict).forEach(function(o){ var on=cur.indexOf(o)>=0; h+='<button type="button" aria-pressed="'+on+'" class="chip pick'+(on?' on':'')+'" data-kind="'+kind+'" data-id="'+id+'" data-field="'+field+'" data-v="'+o+'"'+(riskSet&&riskSet.indexOf(o)>=0?' data-risk="1"':'')+(badSet&&badSet.indexOf(o)>=0?' data-bad="1"':'')+'>'+esc(dict[o])+'</button>'; }); return h+'</div>'; }
+function names(dict,arr){ return (arr||[]).map(function(k){ return dict[k]; }).filter(Boolean); }
+function dataName(k){ var d=DATA.filter(function(x){return x.id===k;})[0]; return d?d.nm:k; }
+
+/* ================= RENDER: ESCENARIO ================= */
+function renderInventory(){ $('#inventory').innerHTML=DATA.map(function(d){ return '<div class="inv'+(d.sens?' sens':'')+'"><span class="id">'+d.id.toUpperCase()+'</span><div><div class="nm">'+esc(d.nm)+'</div><div class="nt">'+dimHTML(d.nt)+'</div></div></div>'; }).join(''); }
+function renderCaseCards(){ $('#caseCards').innerHTML=CASES.map(function(c,i){ return '<div class="card case-card"><div class="label">Caso '+c.k+' · '+esc(c.who)+'</div><h3>'+esc(c.title)+'</h3><p>'+esc(c.ctx)+'</p><p style="margin-top:8px;"><span class="faint">Expectativa del área:</span> '+esc(c.expect)+'</p></div>'; }).join(''); }
+
+/* ================= RENDER: LAB ================= */
+function caseDone(c){ return c.problema.trim()&&c.datos.length&&c.tarea&&c.enfoque&&c.valor.length&&c.lim.length&&c.sup; }
+function renderStepper(){ $('#stepper').innerHTML=CASES.map(function(c,i){ return '<button type="button" class="step'+(S.phase===i?' active':'')+(caseDone(S.cases[i])?' done':'')+'" data-phase="'+i+'"><span class="num">'+c.k+'</span>'+esc(c.short)+'</button>'; }).join(''); }
+function renderLab(){ renderStepper(); var i=S.phase,c=CASES[i],st=S.cases[i];
+ var h='<div class="phase-arrow">Caso '+c.k+' de 7 · <b>'+esc(c.title)+'</b></div>';
+ h+='<div class="card" style="margin-bottom:14px;"><div class="case-head"><div class="k">'+c.k+'</div><div><div class="who">'+esc(c.who)+'</div><p class="ctx">'+esc(c.ctx)+'</p><p class="ctx" style="margin-top:6px;"><span class="faint">Expectativa del área:</span> '+esc(c.expect)+'</p></div></div></div>';
+ h+='<div class="card"><div class="label">Análisis de siete elementos</div>';
+ h+=elem('01','Problema educativo','¿Qué situación requiere atención? Formúlala en términos de aprendizaje, permanencia o experiencia, y di a qué nivel de decisión afecta.','<textarea data-case="'+i+'" data-field="problema" placeholder="Ej.: Un grupo de estudiantes deja de participar entre las semanas 3 y 5 sin que Tutoría lo sepa a tiempo; la decisión afectada es a quién contactar y cuándo.">'+esc(st.problema)+'</textarea>');
+ h+=elem('02','Tipo de datos disponibles','¿Qué información del inventario podría utilizarse? Marca solo la pertinente. Los datos sensibles exigen justificación.',chips('case',i,'datos',DATA.reduce(function(o,d){o[d.id]=d.nm;return o;},{}),st.datos,['d8','d10'],null));
+ h+=elem('03','Tipo de tarea','Clasificación, regresión, agrupamiento u otra. Recuerda que predecir es un propósito, no una tarea.',seg('case',i,'tarea',TASKS,st.tarea));
+ h+=elem('04','Posible enfoque de IA','Supervisado, no supervisado u otro. Si eliges supervisado, verifica que entre tus datos haya ejemplos con resultado conocido.',seg('case',i,'enfoque',APPR,st.enfoque));
+ h+=elem('05','Valor pedagógico','¿Qué decisión podría apoyar? Marca las que correspondan.',chips('case',i,'valor',VALS,st.valor,null,['v6','v7']));
+ h+=elem('06','Limitación','¿Qué no debería decidir automáticamente el sistema? Marca las que correspondan.',chips('case',i,'lim',LIMS,st.lim,null,['l6']));
+ h+=elem('07','Supervisión humana','¿Quién debe interpretar o validar el resultado antes de que tenga consecuencias?',seg('case',i,'sup',SUPS,st.sup));
+ h+=elem('','Justificación breve','Por qué este enfoque y no otro; qué condición de datos o de supervisión lo hace viable.','<textarea data-case="'+i+'" data-field="just" placeholder="Dos a cinco líneas.">'+esc(st.just)+'</textarea>');
+ h+='</div>';
+ h+='<div class="nav-row">'+(i>0?'<button class="pill-btn gophase" data-gophase="'+(i-1)+'">← Caso '+CASES[i-1].k+'</button>':'<button class="pill-btn goto" data-goto="2">← Escenario</button>')+(i<6?'<button class="pill-btn primary gophase" data-gophase="'+(i+1)+'">Caso '+CASES[i+1].k+' →</button>':'<button class="pill-btn primary goto" data-goto="4">Ver la lectura de referencia →</button>')+'</div>';
+ $('#labBody').innerHTML=h; labelize(); }
+function elem(n,t,q,body){ return '<div class="elem"><div>'+(n?'<div class="en">Elemento '+n+'</div>':'')+'<div class="et">'+esc(t)+'</div><div class="eq">'+esc(q)+'</div></div><div>'+body+'</div></div>'; }
+
+/* ================= EVALUATE ================= */
+function overlap(sel,ref,opt,badPenalty){ if(!ref.length) return sel.length?1:0; var tp=0,fp=0; sel.forEach(function(x){ if(ref.indexOf(x)>=0) tp++; else if(!opt||opt.indexOf(x)<0) fp++; }); return Math.max(0,Math.min(1,tp/ref.length-fp*(badPenalty||0.15))); }
+function evalCase(i){ var c=CASES[i],r=c.ref,st=S.cases[i],alerts=[],sc={};
+ sc.datos=overlap(st.datos,r.datos,r.datosOpt,0.12);
+ if(st.datos.indexOf('d8')>=0) alerts.push({lv:'bad',t:'Datos sensibles como predictores',d:'Edad, género, zona o beca entraron como insumo del modelo. Reproducen desigualdades históricas (Baker y Hawn, 2022). Úsalos para auditar el modelo, no para alimentarlo.'});
+ if(st.datos.indexOf('d10')>=0) alerts.push({lv:'mild',t:'Fuente con cobertura insuficiente',d:'La encuesta tiene 18 % de respuesta: el modelo solo "vería" a quien contestó. Sirve para contrastar, no para entrenar.'});
+ sc.tarea=st.tarea?(r.tarea.indexOf(st.tarea)>=0?1:(r.tareaOpt.indexOf(st.tarea)>=0?0.8:0)):0;
+ sc.enf=st.enfoque?(r.enf.indexOf(st.enfoque)>=0?1:(r.enfOpt.indexOf(st.enfoque)>=0?0.8:0)):0;
+ if(st.enfoque==='a1'&&r.labels.length&&!r.labels.some(function(l){return st.datos.indexOf(l)>=0;})) alerts.push({lv:'bad',t:'Supervisado sin etiquetas',d:'Elegiste un enfoque supervisado pero no incluiste la fuente que contiene el resultado conocido ('+r.labels.map(dataName).join('; ')+'). Sin ejemplos etiquetados no hay de qué aprender.'});
+ if(st.enfoque==='a1'&&!r.labels.length) alerts.push({lv:'mild',t:'¿Qué etiqueta aprendería?',d:'En este caso no existe un resultado conocido de antemano. Un enfoque supervisado exigiría que alguien etiquete primero miles de ejemplos; la referencia lo trata como no supervisado o descriptivo.'});
+ if(st.enfoque==='a4') alerts.push({lv:'mild',t:'Aprendizaje por refuerzo',d:'Requiere un entorno donde el sistema pruebe acciones y reciba recompensas repetidamente. En educación eso implica experimentar con estudiantes reales; rara vez es pertinente para análisis de este tipo.'});
+ if(st.tarea==='t1'&&st.enfoque==='a2') alerts.push({lv:'mild',t:'Clasificación sin supervisión',d:'Clasificar en categorías conocidas es, por definición, una tarea supervisada. Si no hay categorías previas, la tarea es agrupamiento.'});
+ if(st.tarea==='t3'&&st.enfoque==='a1') alerts.push({lv:'mild',t:'Agrupar con etiquetas',d:'El agrupamiento busca grupos que no se conocen de antemano; es una tarea no supervisada. Si ya conoces las categorías, se trata de clasificación.'});
+ sc.valor=overlap(st.valor,r.valor,null,0.1); if(st.valor.indexOf('v7')>=0||(st.valor.indexOf('v6')>=0&&i!==5)){ sc.valor=Math.max(0,sc.valor-0.4); alerts.push({lv:'bad',t:'Decisión que no debe automatizarse presentada como valor',d:'Calificar, certificar, sancionar o restringir son decisiones con consecuencias directas para la persona; corresponden a la columna de limitaciones, no a la de valor pedagógico.'}); } else if(st.valor.indexOf('v6')>=0&&i===5){ sc.valor=Math.max(0,sc.valor-0.4); alerts.push({lv:'bad',t:'La calificación como valor del sistema',d:'En este caso la calificación es precisamente lo que el sistema no debe asignar: la sugerencia de nivel apoya la retroalimentación; la nota es responsabilidad del docente.'}); }
+ sc.lim=overlap(st.lim,r.lim,null,0.1); if(st.lim.indexOf('l6')>=0){ sc.lim=0; alerts.push({lv:'bad',t:'"Nada: puede decidir por completo"',d:'Ningún resultado de un modelo educativo debería producir consecuencias sin interpretación humana (UNESCO, 2021; Molenaar, 2022).'}); }
+ sc.sup=st.sup?(r.sup.indexOf(st.sup)>=0?1:(r.supOpt.indexOf(st.sup)>=0?0.8:(st.sup==='s6'?0:0.4))):0; if(st.sup==='s6') alerts.push({lv:'bad',t:'Sin supervisión humana',d:'Nadie respondería por lo que el sistema sugiere. La confiabilidad estadística no sustituye la responsabilidad pedagógica.'});
+ var keys=['datos','tarea','enf','valor','lim','sup'],total=keys.reduce(function(a,k){return a+sc[k];},0)/keys.length;
+ return {sc:sc,alerts:alerts,pct:Math.round(total*100),done:!!caseDone(st)}; }
+function pctClass(p){ return p>=75?'hi':p>=50?'mid':'lo'; }
+
+/* ================= RENDER: RESULTS ================= */
+function renderResults(){ var evs=CASES.map(function(c,i){ return evalCase(i); }),done=evs.filter(function(e){return e.done;}).length,avg=done?Math.round(evs.filter(function(e){return e.done;}).reduce(function(a,e){return a+e.pct;},0)/done):0,nal=evs.reduce(function(a,e){return a+e.alerts.filter(function(x){return x.lv==='bad';}).length;},0);
+ $('#kpis').innerHTML='<div class="card kpi"><div class="val">'+done+'<small> / 7</small></div><div class="lbl">Casos completos</div><div class="read">Un caso cuenta como completo cuando los siete elementos tienen respuesta.</div><div class="bar"><i style="width:'+(done/7*100)+'%"></i></div></div><div class="card kpi"><div class="val">'+avg+'<small> %</small></div><div class="lbl">Coincidencia promedio con la referencia</div><div class="read">'+(avg>=75?'Lógica alineada con la lectura de referencia.':avg>=50?'Coincidencia parcial: revisa los elementos marcados.':'Conviene releer el fundamento antes de continuar.')+'</div><div class="bar"><i style="width:'+avg+'%"></i></div></div><div class="card kpi"><div class="val">'+nal+'</div><div class="lbl">Alertas de coherencia</div><div class="read">'+(nal?'Incoherencias que una herramienta real no te avisaría.':'Ninguna incoherencia crítica detectada.')+'</div></div>';
+ var cols=Object.keys(APPR); $('#approachMap').innerHTML='<table class="mapgrid"><thead><tr><th>Caso</th>'+cols.map(function(a){return '<th>'+esc(APPR[a].replace(' (sin aprendizaje)','').replace(' (LLM)',''))+'</th>';}).join('')+'</tr></thead><tbody>'+CASES.map(function(c,i){ var st=S.cases[i],ok=c.ref.enf.concat(c.ref.enfOpt); return '<tr><td>'+c.k+' · '+esc(c.short)+'</td>'+cols.map(function(a){ var y=st.enfoque===a,r=ok.indexOf(a)>=0; return '<td>'+(y&&r?'<span class="both" title="Coincide"></span>':y?'<span class="y" title="Tu elección"></span>':r?'<span class="ref" title="Aceptado por la referencia"></span>':'')+'</td>'; }).join('')+'</tr>'; }).join('')+'</tbody></table><div class="legend" style="margin-top:12px;"><span><span class="dot" style="background:var(--blue-500)"></span>Tu elección</span><span><span class="dot" style="border:2px solid var(--teal-400); width:8px; height:8px;"></span>Aceptado por la referencia</span></div>';
+ $('#results').innerHTML=CASES.map(function(c,i){ var st=S.cases[i],e=evs[i],r=c.ref; function y(arr,dict){ var n=names(dict,arr); return n.length?esc(n.join('; ')):'<span class="none">sin respuesta</span>'; } function ys(k,dict){ return k?esc(dict[k]):'<span class="none">sin respuesta</span>'; } function refl(arr,dict,opt){ var n=names(dict,arr); var o=names(dict,opt||[]); return esc(n.join('; '))+(o.length?' <span class="faint">(también: '+esc(o.join('; '))+')</span>':''); } function pc(v){ var p=Math.round(v*100); return '<span class="pct '+pctClass(p)+'">'+p+' %</span>'; }
+  return '<div class="card"><div class="row sp" style="margin-bottom:10px;"><div><div class="label">Caso '+c.k+'</div><h3 style="margin:0;">'+esc(c.title)+'</h3></div><span class="pct '+pctClass(e.pct)+'" style="font-size:13px; padding:6px 12px;">'+(e.done?e.pct+' % de coincidencia':'incompleto')+'</span></div>'+
+  '<div class="mtx-wrap"><table class="cmp"><thead><tr><th>Elemento</th><th>Tu análisis</th><th>Referencia</th><th></th></tr></thead><tbody>'+
+  '<tr><td class="e">Problema educativo</td><td class="y" colspan="2">'+(st.problema.trim()?esc(st.problema):'<span class="none">sin respuesta</span>')+'</td><td class="m faint">texto</td></tr>'+
+  '<tr><td class="e">Datos</td><td class="y">'+y(st.datos,DATA.reduce(function(o,d){o[d.id]=d.id.toUpperCase();return o;},{}))+'</td><td class="r">'+refl(r.datos,DATA.reduce(function(o,d){o[d.id]=d.id.toUpperCase();return o;},{}),r.datosOpt)+'</td><td class="m">'+pc(e.sc.datos)+'</td></tr>'+
+  '<tr><td class="e">Tipo de tarea</td><td class="y">'+ys(st.tarea,TASKS)+'</td><td class="r">'+refl(r.tarea,TASKS,r.tareaOpt)+'</td><td class="m">'+pc(e.sc.tarea)+'</td></tr>'+
+  '<tr><td class="e">Enfoque de IA</td><td class="y">'+ys(st.enfoque,APPR)+'</td><td class="r">'+refl(r.enf,APPR,r.enfOpt)+'</td><td class="m">'+pc(e.sc.enf)+'</td></tr>'+
+  '<tr><td class="e">Valor pedagógico</td><td class="y">'+y(st.valor,VALS)+'</td><td class="r">'+refl(r.valor,VALS)+'</td><td class="m">'+pc(e.sc.valor)+'</td></tr>'+
+  '<tr><td class="e">Limitación</td><td class="y">'+y(st.lim,LIMS)+'</td><td class="r">'+refl(r.lim,LIMS)+'</td><td class="m">'+pc(e.sc.lim)+'</td></tr>'+
+  '<tr><td class="e">Supervisión humana</td><td class="y">'+ys(st.sup,SUPS)+'</td><td class="r">'+refl(r.sup,SUPS,r.supOpt)+'</td><td class="m">'+pc(e.sc.sup)+'</td></tr>'+
+  '</tbody></table></div>'+
+  (e.alerts.length?'<div class="stack" style="margin-top:12px;">'+e.alerts.map(function(a){ return '<div class="card tight '+(a.lv==='bad'?'danger':'warn')+'"><div class="consequence '+(a.lv==='bad'?'':'mild')+'"><div class="ico">'+(a.lv==='bad'?'!':'?')+'</div><div><div class="t">'+esc(a.t)+'</div><div class="d">'+esc(a.d)+'</div></div></div></div>'; }).join('')+'</div>':'')+
+  '<div class="logic"><span class="lb">Lógica de referencia</span>'+c.logic+'</div><div class="field mine-x"><span class="fl">Si discrepas de la referencia, argumenta tu postura con evidencia o con un criterio explícito (opcional)</span><textarea data-case="'+i+'" data-field="disc" placeholder="Ej.: Elegí agrupamiento porque ...">'+esc(st.disc)+'</textarea></div></div>'; }).join(''); }
+
+/* ================= RENDER: TRANSFER ================= */
+function renderTransfer(){ var t=S.transfer; $$('#transferSeg button').forEach(function(b){ var on=b.getAttribute('data-v')===t.needs; b.classList.toggle('on',on); b.setAttribute('aria-pressed',on); });
+ $('#transferTable').innerHTML='<div class="label">Los siete elementos aplicados a tu situación</div>'+
+ elem('01','Problema educativo','¿Qué situación requiere atención y a qué nivel de decisión afecta?','<textarea data-ref="p1">'+esc(t.p1)+'</textarea>')+
+ elem('02','Tipo de datos disponibles','¿Qué información existe realmente en tu contexto? ¿Qué mide, con qué cobertura, con qué consentimiento?','<textarea data-ref="p2">'+esc(t.p2)+'</textarea>')+
+ elem('03','Tipo de tarea','',seg('transfer','t','tarea',TASKS,t.tarea))+
+ elem('04','Posible enfoque de IA','Si eliges supervisado, indica en el elemento 2 de dónde salen los ejemplos con resultado conocido.',seg('transfer','t','enfoque',APPR,t.enfoque))+
+ elem('05','Valor pedagógico','¿Qué decisión podría apoyar y quién la toma?','<textarea data-ref="p5">'+esc(t.p5)+'</textarea>')+
+ elem('06','Limitación','¿Qué no debería decidir automáticamente el sistema?','<textarea data-ref="p6">'+esc(t.p6)+'</textarea>')+
+ elem('07','Supervisión humana','',seg('transfer','t','sup',SUPS,t.sup));
+ $$('[data-ref]').forEach(function(el){ var k=el.getAttribute('data-ref'); if(k in S.transfer) el.value=S.transfer[k]; if(k in S.refl) el.value=S.refl[k]; }); }
+
+/* ================= RENDER: REPORT ================= */
+function renderChecklist(){ var evs=CASES.map(function(c,i){return evalCase(i);}),done=evs.filter(function(e){return e.done;}).length,t=S.transfer; var items=[['Siete casos analizados',done===7,done+' de 7'],['Justificaciones escritas',S.cases.every(function(c){return c.just.trim();}),S.cases.filter(function(c){return c.just.trim();}).length+' de 7'],['Ensayo en contexto: pregunta decisiva',!!t.needs,t.needs?(t.needs==='si'?'Requiere IA':'No requiere IA'):'pendiente'],['Ensayo en contexto: siete elementos',!!(t.p1.trim()&&t.p2.trim()&&t.tarea&&t.enfoque&&t.p5.trim()&&t.p6.trim()&&t.sup),''],['Fundamentación del ensayo',!!t.t_why.trim(),''],['Declaración de uso de IA',!!S.refl.iaDecl.trim(),''],['Reflexión',!!S.refl.reflexion.trim(),''],['Nombre del doctorando',!!S.refl.nombre.trim(),'']];
+ $('#checklist').innerHTML=items.map(function(it){ return '<div><span style="color:'+(it[1]?'var(--teal-400)':'var(--amber)')+'; font-family:var(--font-mono);">'+(it[1]?'●':'○')+'</span> '+esc(it[0])+(it[2]?' <span class="faint">· '+esc(it[2])+'</span>':'')+'</div>'; }).join(''); }
+function buildReport(){ var evs=CASES.map(function(c,i){return evalCase(i);}),nombre=S.refl.nombre.trim()||'(sin nombre)',t=S.transfer,done=evs.filter(function(e){return e.done;}).length,avg=done?Math.round(evs.filter(function(e){return e.done;}).reduce(function(a,e){return a+e.pct;},0)/done):0;
+ var h='<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>VIA7012 S2 · Ficha del laboratorio conceptual</title><style>body{font-family:Inter,Segoe UI,Arial,sans-serif;color:#1b2740;max-width:900px;margin:0 auto;padding:40px 28px;line-height:1.55;font-size:13.5px}h1{font-size:26px;color:#062B70;margin:0 0 4px}h2{font-size:18px;color:#062B70;border-bottom:2px solid #1BDAB5;padding-bottom:6px;margin:34px 0 12px}h3{font-size:14px;color:#0944AF;margin:18px 0 6px}.meta{color:#5a6a8c;font-size:12.5px;margin-bottom:6px}.box{background:#f3f6fc;border:1px solid #d7e0f2;border-radius:10px;padding:12px 14px;margin:8px 0;white-space:pre-wrap}table{width:100%;border-collapse:collapse;margin:8px 0 14px;font-size:12.5px}th,td{border:1px solid #d7e0f2;padding:7px 9px;text-align:left;vertical-align:top}th{background:#eef3fb;color:#062B70;font-weight:600}td.e{font-weight:600;white-space:nowrap}.alert{border-left:4px solid #FF6B6B;background:#fff4f4;padding:8px 12px;margin:6px 0;font-size:12.5px}.alert.mild{border-color:#F5B942;background:#fffaf0}.logic{background:#eef7f5;border:1px solid #bfe8dd;border-radius:10px;padding:10px 14px;font-size:12.5px;margin:8px 0}.pct{font-family:monospace;font-size:12px}.refs li{margin-bottom:6px;font-size:12.5px}@media print{body{padding:0}}</style></head><body>';
+ h+='<div class="meta">Broward International University · VIA7012 Introduction to AI in Sustainable Education · Semana 2 · Actividad formativa (0 %)</div><h1>¿Qué tipo de IA responde al problema educativo?</h1><div class="meta">Ficha de práctica · '+esc(nombre)+(S.refl.programa.trim()?' · '+esc(S.refl.programa):'')+' · '+new Date().toLocaleDateString('es')+'</div>';
+ h+='<h2>Síntesis</h2><p>Casos completos: <b>'+done+' de 7</b>. Coincidencia promedio con la lectura de referencia: <b>'+avg+' %</b>. Alertas críticas de coherencia: <b>'+evs.reduce(function(a,e){return a+e.alerts.filter(function(x){return x.lv==="bad";}).length;},0)+'</b>. La coincidencia resume la alineación con una lectura consensuada; no es una calificación ni acredita competencia técnica.</p>';
+ h+='<table><tr><th>Caso</th><th>Tipo de tarea</th><th>Enfoque</th><th>Supervisión</th><th>Coincidencia</th></tr>'+CASES.map(function(c,i){ var st=S.cases[i]; return '<tr><td>'+c.k+' · '+esc(c.short)+'</td><td>'+esc(st.tarea?TASKS[st.tarea]:'—')+'</td><td>'+esc(st.enfoque?APPR[st.enfoque]:'—')+'</td><td>'+esc(st.sup?SUPS[st.sup]:'—')+'</td><td class="pct">'+(evs[i].done?evs[i].pct+' %':'incompleto')+'</td></tr>'; }).join('')+'</table>';
+ CASES.forEach(function(c,i){ var st=S.cases[i],e=evs[i],r=c.ref; function nm(arr,dict){ var n=names(dict,arr); return n.length?esc(n.join('; ')):'—'; } function id(arr){ return arr.length?arr.map(function(x){return x.toUpperCase();}).join(', '):'—'; }
+  h+='<h2>Caso '+c.k+' · '+esc(c.title)+'</h2><div class="meta">'+esc(c.who)+' · '+esc(c.ctx)+'</div>';
+  h+='<table><tr><th>Elemento</th><th>Mi análisis</th><th>Lectura de referencia</th></tr>'+
+  '<tr><td class="e">Problema educativo</td><td colspan="2">'+(st.problema.trim()?esc(st.problema):'—')+'</td></tr>'+
+  '<tr><td class="e">Tipo de datos</td><td>'+id(st.datos)+'<br><span style="color:#5a6a8c">'+nm(st.datos,DATA.reduce(function(o,d){o[d.id]=d.nm;return o;},{}))+'</span></td><td>'+id(r.datos)+(r.datosOpt.length?' (también: '+id(r.datosOpt)+')':'')+'</td></tr>'+
+  '<tr><td class="e">Tipo de tarea</td><td>'+esc(st.tarea?TASKS[st.tarea]:'—')+'</td><td>'+nm(r.tarea,TASKS)+(r.tareaOpt.length?' (también: '+nm(r.tareaOpt,TASKS)+')':'')+'</td></tr>'+
+  '<tr><td class="e">Enfoque de IA</td><td>'+esc(st.enfoque?APPR[st.enfoque]:'—')+'</td><td>'+nm(r.enf,APPR)+(r.enfOpt.length?' (también: '+nm(r.enfOpt,APPR)+')':'')+'</td></tr>'+
+  '<tr><td class="e">Valor pedagógico</td><td>'+nm(st.valor,VALS)+'</td><td>'+nm(r.valor,VALS)+'</td></tr>'+
+  '<tr><td class="e">Limitación</td><td>'+nm(st.lim,LIMS)+'</td><td>'+nm(r.lim,LIMS)+'</td></tr>'+
+  '<tr><td class="e">Supervisión humana</td><td>'+esc(st.sup?SUPS[st.sup]:'—')+'</td><td>'+nm(r.sup,SUPS)+(r.supOpt.length?' (también: '+nm(r.supOpt,SUPS)+')':'')+'</td></tr>'+
+  '<tr><td class="e">Justificación</td><td colspan="2">'+(st.just.trim()?esc(st.just):'—')+'</td></tr></table>';
+  h+='<p class="pct">Coincidencia con la referencia: '+(e.done?e.pct+' %':'caso incompleto')+'</p>';
+  e.alerts.forEach(function(a){ h+='<div class="alert '+(a.lv==='bad'?'':'mild')+'"><b>'+esc(a.t)+'.</b> '+esc(a.d)+'</div>'; });
+  if(st.disc.trim()) h+='<p><b>Mi postura frente a la referencia:</b></p><div class="box">'+esc(st.disc)+'</div>';
+  h+='<div class="logic"><b>Lógica de referencia.</b> '+c.logic.replace(/<\/?b>/g,'')+'</div>'; });
+ h+='<h2>Ensayo en mi contexto (práctica; no es el diagnóstico R2)</h2><div class="meta">'+esc(t.t_ctx||'(contexto no indicado)')+'</div><p><b>Situación:</b> '+esc(t.t_sit||'—')+'</p><p><b>¿Requiere un modelo de IA?</b> '+(t.needs==='si'?'Sí':t.needs==='no'?'No: una analítica descriptiva o una intervención pedagógica basta':'—')+'</p><div class="box">'+esc(t.t_why||'—')+'</div>';
+ h+='<table><tr><th>Elemento</th><th>Análisis</th></tr><tr><td class="e">Problema educativo</td><td>'+esc(t.p1||'—')+'</td></tr><tr><td class="e">Tipo de datos</td><td>'+esc(t.p2||'—')+'</td></tr><tr><td class="e">Tipo de tarea</td><td>'+esc(t.tarea?TASKS[t.tarea]:'—')+'</td></tr><tr><td class="e">Enfoque de IA</td><td>'+esc(t.enfoque?APPR[t.enfoque]:'—')+'</td></tr><tr><td class="e">Valor pedagógico</td><td>'+esc(t.p5||'—')+'</td></tr><tr><td class="e">Limitación</td><td>'+esc(t.p6||'—')+'</td></tr><tr><td class="e">Supervisión humana</td><td>'+esc(t.sup?SUPS[t.sup]:'—')+'</td></tr></table>';
+ h+='<h2>Declaración de uso de IA</h2><div class="box">'+esc(S.refl.iaDecl||'—')+'</div><h2>Reflexión</h2><div class="box">'+esc(S.refl.reflexion||'—')+'</div>';
+ h+='<h2>Referencias</h2><ul class="refs">'+REFS.map(function(r){return '<li>'+r+'</li>';}).join('')+'</ul>';
+ h+='<p class="meta">Laboratorio Conceptual · Broward International University · El escenario, el instituto y sus datos son ficticios. Documento producido por el doctorando como práctica formativa; no es el diagnóstico R2.</p></body></html>'; return h; }
+function download(){ var html=buildReport(),blob=new Blob([html],{type:'text/html;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a'); var nm=(S.refl.nombre||'').trim().replace(/[^\w\u00C0-\u017F]+/g,'_'); a.href=url; a.download='VIA7012_S2_Ficha_Laboratorio_Conceptual'+(nm?'_'+nm:'')+'.html'; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(function(){ URL.revokeObjectURL(url); },1500); toast('Ficha descargada'); }
+
+/* ================= NAV + EVENTS ================= */
+function labelize(){ $$('input,textarea').forEach(function(el){ if(el.getAttribute('aria-label')) return; var e=el.closest('.elem'),f=el.closest('.field'),l=e&&$('.et',e)?$('.et',e):(f&&$('.fl',f)); if(el.hasAttribute('data-case')&&el.getAttribute('data-field')==='disc') l={textContent:'Tu postura frente a la referencia'}; if(l) el.setAttribute('aria-label',l.textContent); }); }
+function showTab(i){ $$('.tab').forEach(function(t){ t.classList.toggle('active',+t.getAttribute('data-tab')===i); }); $$('.panel').forEach(function(p){ p.classList.toggle('active',+p.getAttribute('data-panel')===i); }); window.scrollTo(0,0); if(i===3) renderLab(); if(i===4) renderResults(); if(i===5) renderTransfer(); if(i===6) renderChecklist(); labelize(); markTabs(); }
+function markTabs(){ var done=S.cases.filter(caseDone).length; $('.tab[data-tab="3"]').classList.toggle('has-done',done===7); $('.tab[data-tab="5"]').classList.toggle('has-done',!!S.transfer.needs); $('.tab[data-tab="6"]').classList.toggle('has-done',!!S.refl.nombre.trim()); }
+function showPhase(i){ S.phase=i; save(); renderLab(); var st=$('#stepper'); if(st) window.scrollTo(0, st.getBoundingClientRect().top+window.pageYOffset-120); }
+function renderAll(){ $('#refsList').innerHTML=REFS.map(function(r){return '<li>'+r+'</li>';}).join(''); renderInventory(); renderCaseCards(); renderLab(); renderTransfer(); renderChecklist(); labelize(); markTabs(); }
+
+document.addEventListener('click',function(ev){ var t=ev.target.closest('button'); if(!t) return;
+ if(t.classList.contains('tab')){ showTab(+t.getAttribute('data-tab')); return; }
+ if(t.classList.contains('goto')){ showTab(+t.getAttribute('data-goto')); return; }
+ if(t.classList.contains('gophase')){ showPhase(+t.getAttribute('data-gophase')); return; }
+ if(t.classList.contains('step')){ showPhase(+t.getAttribute('data-phase')); return; }
+ if(t.id==='btnDownload'||t.id==='btnDownloadTop'){ download(); return; }
+ if(t.id==='btnReset'){ if(window.confirm('Se borrarán todos los análisis y textos de este laboratorio. ¿Continuar?')){ try{ window.localStorage.removeItem(STORE_KEY); }catch(x){} S=freshState(); renderAll(); showTab(1); toast('Laboratorio reiniciado'); } return; }
+ if(t.classList.contains('pick')){ var kind=t.getAttribute('data-kind'),id=+t.getAttribute('data-id'),f=t.getAttribute('data-field'),v=t.getAttribute('data-v'),arr=S.cases[id][f],ix=arr.indexOf(v); if(ix>=0) arr.splice(ix,1); else arr.push(v); save(); t.classList.toggle('on',ix<0); t.setAttribute('aria-pressed',ix<0); renderStepper(); markTabs(); return; }
+ var sg=t.closest('.seg'); if(sg){ var kind2=sg.getAttribute('data-kind'),f2=sg.getAttribute('data-field'),v2=t.getAttribute('data-v'); if(kind2==='case'){ var ci=+sg.getAttribute('data-id'); S.cases[ci][f2]=S.cases[ci][f2]===v2?null:v2; } else { S.transfer[f2]=S.transfer[f2]===v2?null:v2; } save(); $$('button',sg).forEach(function(b){ var on=b.getAttribute('data-v')===(kind2==='case'?S.cases[+sg.getAttribute('data-id')][f2]:S.transfer[f2]); b.classList.toggle('on',on); b.setAttribute('aria-pressed',on); }); renderStepper(); markTabs(); return; }
+});
+document.addEventListener('input',function(ev){ var el=ev.target; if(el.hasAttribute('data-case')){ S.cases[+el.getAttribute('data-case')][el.getAttribute('data-field')]=el.value; save(); clearTimeout(document._st); document._st=setTimeout(renderStepper,300); return; } if(el.hasAttribute('data-ref')){ var k=el.getAttribute('data-ref'); if(k in S.refl) S.refl[k]=el.value; else S.transfer[k]=el.value; save(); if(k==='nombre') markTabs(); clearTimeout(document._sf); document._sf=setTimeout(renderChecklist,400); } });
+
+load(); renderAll();
+})();
+</script>
+</body>
+</html>

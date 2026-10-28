@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VIA7012 · Semana 7 · Taller de práctica de decisión con evidencia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy-950:#041B45; --navy-900:#062B70; --navy-800:#073587;
+    --blue-700:#0944AF; --blue-500:#2073F5; --teal-400:#1BDAB5;
+    --amber:#F5B942; --coral:#FF6B6B; --gray-300:#BEC0BD; --white:#FFFFFF;
+    --glass:rgba(255,255,255,0.055); --glass-strong:rgba(255,255,255,0.09);
+    --border-soft:rgba(255,255,255,0.14); --border-strong:rgba(255,255,255,0.26);
+    --ink:#EAF0FC; --ink-dim:#AFC0E0; --ink-faint:#7C90BC;
+    --font-display:'Space Grotesk', sans-serif; --font-body:'Inter', sans-serif; --font-mono:'JetBrains Mono', monospace;
+  }
+  *,*::before,*::after{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0; min-height:100%;
+    background:
+      radial-gradient(ellipse 900px 600px at 88% -6%, rgba(32,115,245,0.24), transparent 60%),
+      radial-gradient(ellipse 700px 500px at -4% 106%, rgba(27,218,181,0.14), transparent 55%),
+      linear-gradient(160deg, var(--navy-950) 0%, var(--navy-900) 46%, var(--navy-800) 100%);
+    background-attachment:fixed; color:var(--ink); font-family:var(--font-body); -webkit-font-smoothing:antialiased;
+  }
+  ::selection{ background:var(--blue-500); color:#fff; }
+  button, input, select, textarea{ font-family:inherit; }
+  button{ cursor:pointer; }
+  a{ color:inherit; }
+  :focus-visible{ outline:2px solid var(--teal-400); outline-offset:2px; }
+  .noise{ position:fixed; inset:0; pointer-events:none; opacity:0.035; mix-blend-mode:overlay; z-index:0;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+  .mark{ position:relative; width:22px; height:22px; flex:0 0 auto; }
+  .mark span{ position:absolute; width:14px; height:14px; border-radius:3px; }
+  .mark span.t{ top:0; left:0; background:var(--teal-400); }
+  .mark span.b{ bottom:0; right:0; background:var(--blue-500); }
+
+  /* ---------- topbar + tabs ---------- */
+  header.topbar{ position:sticky; top:0; z-index:40; background:rgba(4,27,69,0.72); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); border-bottom:1px solid var(--border-soft); }
+  .topbar-row{ display:flex; align-items:center; justify-content:space-between; gap:14px; padding:14px clamp(16px,4vw,48px) 10px; }
+  .brand{ display:flex; align-items:center; gap:10px; min-width:0; }
+  .brand img{ height:22px; width:auto; display:block; opacity:0.95; }
+  .brand .divider{ width:1px; height:18px; background:var(--border-strong); }
+  .brand .tag{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:0.12em; color:var(--ink-dim); text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .top-actions{ display:flex; gap:8px; align-items:center; flex:0 0 auto; }
+  .pill-btn{ display:inline-flex; align-items:center; gap:7px; background:var(--glass); border:1px solid var(--border-soft); color:var(--ink); padding:8px 13px; border-radius:100px; font-size:12px; font-weight:600; transition:background .2s, border-color .2s; }
+  .pill-btn:hover{ background:var(--glass-strong); border-color:var(--border-strong); }
+  .pill-btn.primary{ background:linear-gradient(90deg,var(--teal-400),var(--blue-500)); color:#04193f; border:none; }
+  .pill-btn svg{ width:14px; height:14px; }
+  .tabs{ display:flex; gap:4px; padding:0 clamp(16px,4vw,48px); overflow-x:auto; scrollbar-width:none; }
+  .tabs::-webkit-scrollbar{ display:none; }
+  .tab{ flex:0 0 auto; background:transparent; border:none; border-bottom:2px solid transparent; color:var(--ink-dim); padding:10px 12px 11px; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:8px; white-space:nowrap; transition:color .2s, border-color .2s; }
+  .tab .n{ font-family:var(--font-mono); font-size:10.5px; color:var(--ink-faint); }
+  .tab:hover{ color:#fff; }
+  .tab.active{ color:#fff; border-bottom-color:var(--teal-400); }
+  .tab.active .n{ color:var(--teal-400); }
+  .tab .done{ width:7px; height:7px; border-radius:50%; background:var(--teal-400); display:none; }
+  .tab.has-done .done{ display:inline-block; }
+
+  /* ---------- layout ---------- */
+  main{ position:relative; z-index:1; max-width:1180px; margin:0 auto; padding:34px clamp(16px,4vw,48px) 90px; }
+  .panel{ display:none; }
+  .panel.active{ display:block; animation:fadeIn .45s ease; }
+  @keyframes fadeIn{ from{ opacity:0; transform:translateY(6px);} to{ opacity:1; transform:none;} }
+  @media (prefers-reduced-motion:reduce){ .panel.active{ animation:none; } html{ scroll-behavior:auto; } }
+
+  .eyebrow{ display:inline-flex; align-items:center; gap:8px; font-family:var(--font-mono); font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--teal-400); font-weight:500; margin-bottom:12px; }
+  .eyebrow::before{ content:''; width:16px; height:1px; background:var(--teal-400); }
+  h1.title{ font-family:var(--font-display); font-weight:700; color:#fff; font-size:clamp(26px,3.6vw,42px); line-height:1.1; letter-spacing:-0.01em; margin:0 0 14px; }
+  h2{ font-family:var(--font-display); font-weight:700; color:#fff; font-size:clamp(19px,2.2vw,24px); line-height:1.2; margin:0 0 10px; letter-spacing:-0.005em; }
+  h3{ font-family:var(--font-display); font-weight:600; color:#fff; font-size:16px; margin:0 0 8px; }
+  p.lede{ font-size:clamp(14.5px,1.5vw,17px); line-height:1.62; color:var(--ink-dim); max-width:780px; margin:0 0 26px; }
+  p{ line-height:1.62; }
+  .muted{ color:var(--ink-dim); }
+  .faint{ color:var(--ink-faint); }
+  .mono{ font-family:var(--font-mono); }
+  .label{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:0.1em; color:var(--teal-400); margin-bottom:8px; text-transform:uppercase; }
+
+  .card{ background:var(--glass); border:1px solid var(--border-soft); border-radius:18px; backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); padding:22px 24px; }
+  .card.tight{ padding:16px 18px; border-radius:14px; }
+  .card.accent{ border-color:rgba(27,218,181,0.35); background:rgba(27,218,181,0.06); }
+  .card.warn{ border-color:rgba(245,185,66,0.4); background:rgba(245,185,66,0.07); }
+  .card.danger{ border-color:rgba(255,107,107,0.4); background:rgba(255,107,107,0.07); }
+  .grid{ display:grid; gap:14px; }
+  .g2{ grid-template-columns:repeat(2,1fr); } .g3{ grid-template-columns:repeat(3,1fr); } .g4{ grid-template-columns:repeat(4,1fr); }
+  @media (max-width:860px){ .g3,.g4{ grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:600px){ .g2,.g3,.g4{ grid-template-columns:1fr;} }
+  .stack{ display:flex; flex-direction:column; gap:14px; }
+  .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .sp{ justify-content:space-between; }
+
+  .chip{ display:inline-flex; align-items:center; gap:6px; font-family:var(--font-mono); font-size:11.5px; font-weight:500; letter-spacing:0.02em; padding:7px 13px; border-radius:100px; border:1px solid var(--border-soft); background:var(--glass); color:var(--ink-dim); transition:all .2s; }
+  button.chip:hover{ border-color:var(--border-strong); color:#fff; }
+  .chip.on{ background:rgba(27,218,181,0.14); border-color:var(--teal-400); color:#fff; }
+  .chip.sm{ font-size:10.5px; padding:5px 10px; }
+  .tag-group{ display:flex; gap:6px; flex-wrap:wrap; }
+
+  /* ---------- forms ---------- */
+  textarea, input[type=text], select{ width:100%; background:rgba(4,27,69,0.45); border:1px solid var(--border-soft); border-radius:12px; color:var(--ink); font-size:13.5px; line-height:1.55; padding:11px 13px; transition:border-color .2s; }
+  textarea{ min-height:88px; resize:vertical; }
+  textarea:focus, input:focus, select:focus{ border-color:var(--teal-400); outline:none; }
+  select{ appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23AFC0E0' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; padding-right:34px; }
+  select option{ background:#062B70; color:#fff; }
+  .field{ display:flex; flex-direction:column; gap:6px; }
+  .field .fl{ font-size:12px; font-weight:600; color:var(--ink-dim); }
+  .seg{ display:inline-flex; background:rgba(4,27,69,0.45); border:1px solid var(--border-soft); border-radius:100px; padding:3px; gap:2px; flex-wrap:wrap; }
+  .seg button{ background:transparent; border:none; color:var(--ink-dim); font-size:12px; font-weight:600; padding:7px 12px; border-radius:100px; transition:all .18s; }
+  .seg button:hover{ color:#fff; }
+  .seg button.on{ background:var(--glass-strong); color:#fff; box-shadow:inset 0 0 0 1px var(--border-strong); }
+  .seg button.on[data-v="nucleo"], .seg button.on[data-v="fuerte"], .seg button.on[data-v="disponible"], .seg button.on[data-v="relevante"], .seg button.on[data-v="bidireccional"]{ background:rgba(27,218,181,0.18); box-shadow:inset 0 0 0 1px var(--teal-400); }
+  .seg button.on[data-v="periferico"], .seg button.on[data-v="debil"], .seg button.on[data-v="limitado"], .seg button.on[data-v="mas"], .seg button.on[data-v="descendente"], .seg button.on[data-v="ascendente"]{ background:rgba(32,115,245,0.22); box-shadow:inset 0 0 0 1px var(--blue-500); }
+  .seg button.on[data-v="tension"], .seg button.on[data-v="desconocido"], .seg button.on[data-v="desconocida"], .seg button.on[data-v="medio"]{ background:rgba(245,185,66,0.2); box-shadow:inset 0 0 0 1px var(--amber); }
+  .seg button.on[data-v="omitido"], .seg button.on[data-v="inexistente"], .seg button.on[data-v="ausente"], .seg button.on[data-v="irrelevante"], .seg button.on[data-v="bloqueado"], .seg button.on[data-v="alto"]{ background:rgba(255,107,107,0.2); box-shadow:inset 0 0 0 1px var(--coral); }
+
+  /* ---------- lab stepper ---------- */
+  .stepper{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:22px; }
+  .step{ display:inline-flex; align-items:center; gap:8px; background:var(--glass); border:1px solid var(--border-soft); color:var(--ink-dim); padding:8px 13px 8px 9px; border-radius:100px; font-size:12px; font-weight:600; transition:all .2s; }
+  .step .num{ width:20px; height:20px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:10.5px; background:rgba(255,255,255,0.08); color:var(--ink); }
+  .step.active{ background:rgba(32,115,245,0.2); border-color:var(--blue-500); color:#fff; }
+  .step.active .num{ background:var(--blue-700); color:#fff; }
+  .step.done .num{ background:var(--teal-400); color:#04193f; }
+  .step:hover{ border-color:var(--border-strong); color:#fff; }
+  .phase{ display:none; } .phase.active{ display:block; }
+  .phase-arrow{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; font-family:var(--font-mono); font-size:11px; color:var(--ink-faint); margin:0 0 22px; }
+  .phase-arrow b{ color:var(--teal-400); font-weight:500; }
+
+  /* ---------- actor cards ---------- */
+  .actor{ display:grid; grid-template-columns:1fr auto; gap:12px; align-items:start; }
+  .actor .meta{ min-width:0; }
+  .actor .name{ font-weight:700; color:#fff; font-size:14px; margin-bottom:3px; }
+  .actor .grp{ font-family:var(--font-mono); font-size:10px; letter-spacing:0.08em; color:var(--ink-faint); text-transform:uppercase; }
+  .actor .desc{ font-size:12.5px; color:var(--ink-dim); line-height:1.5; margin-top:6px; }
+  .actor .initial{ display:inline-block; font-family:var(--font-mono); font-size:9.5px; padding:2px 7px; border-radius:100px; border:1px solid rgba(32,115,245,0.5); color:var(--blue-500); margin-left:6px; vertical-align:middle; }
+  @media (max-width:600px){ .actor{ grid-template-columns:1fr; } }
+
+  .rel{ display:grid; grid-template-columns:1.2fr 1.6fr auto; gap:12px; align-items:center; }
+  .rel .pair{ font-weight:600; color:#fff; font-size:13.5px; }
+  .rel .pair span{ color:var(--teal-400); font-family:var(--font-mono); font-size:11px; }
+  .rel .hint{ font-size:12px; color:var(--ink-dim); line-height:1.5; }
+  .rel.na{ opacity:.45; }
+  .check{ display:inline-flex; align-items:center; gap:8px; font-size:12px; font-weight:600; color:var(--ink-dim); cursor:pointer; user-select:none; }
+  .check input{ width:16px; height:16px; accent-color:var(--teal-400); }
+  @media (max-width:860px){ .rel{ grid-template-columns:1fr; } }
+
+  .voice{ border-left:3px solid var(--blue-500); padding-left:14px; }
+  .voice .who{ font-size:12px; font-weight:700; color:#fff; }
+  .voice .role{ font-family:var(--font-mono); font-size:10.5px; color:var(--ink-faint); }
+  .voice q{ display:block; font-size:13.5px; color:var(--ink); line-height:1.6; margin:6px 0 0; font-style:italic; quotes:"“" "”"; }
+  .data-row{ display:flex; gap:10px; align-items:baseline; font-size:13px; padding:7px 0; border-bottom:1px dashed var(--border-soft); }
+  .data-row:last-child{ border-bottom:none; }
+  .data-row .k{ flex:0 0 46%; color:var(--ink-dim); }
+  .data-row .v{ color:#fff; font-weight:600; }
+  .data-row .v.unknown{ color:var(--amber); font-weight:500; font-style:italic; }
+
+  /* ---------- KPIs ---------- */
+  .kpi{ padding:16px 18px; }
+  .kpi .val{ font-family:var(--font-display); font-size:30px; font-weight:700; color:#fff; line-height:1; }
+  .kpi .val small{ font-size:14px; color:var(--ink-faint); font-weight:500; }
+  .kpi .lbl{ font-size:12px; color:var(--ink-dim); margin-top:6px; font-weight:600; }
+  .kpi .read{ font-size:12px; color:var(--ink-faint); margin-top:8px; line-height:1.5; }
+  .bar{ height:6px; background:rgba(255,255,255,0.08); border-radius:100px; overflow:hidden; margin-top:10px; }
+  .bar i{ display:block; height:100%; background:linear-gradient(90deg,var(--teal-400),var(--blue-500)); width:0; transition:width .6s ease; }
+
+  .consequence{ display:grid; grid-template-columns:auto 1fr; gap:12px; align-items:start; }
+  .consequence .ico{ width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:15px; background:rgba(255,107,107,0.15); border:1px solid rgba(255,107,107,0.4); }
+  .consequence.mild .ico{ background:rgba(245,185,66,0.15); border-color:rgba(245,185,66,0.4); }
+  .consequence.ok .ico{ background:rgba(27,218,181,0.15); border-color:rgba(27,218,181,0.4); }
+  .consequence .t{ font-weight:700; color:#fff; font-size:13.5px; margin-bottom:3px; }
+  .consequence .d{ font-size:13px; color:var(--ink-dim); line-height:1.55; }
+
+  .diff{ font-size:13px; }
+  .diff .add{ color:var(--teal-400); } .diff .rem{ color:var(--coral); } .diff .chg{ color:var(--amber); }
+  .diff li{ margin:4px 0; }
+
+  /* ---------- map ---------- */
+  .map-wrap{ background:rgba(4,27,69,0.5); border:1px solid var(--border-soft); border-radius:18px; padding:10px; overflow:hidden; }
+  .map-wrap svg{ width:100%; height:auto; display:block; }
+  .legend{ display:flex; gap:14px; flex-wrap:wrap; font-size:11.5px; color:var(--ink-dim); margin-top:10px; }
+  .legend i{ display:inline-block; width:22px; height:0; border-top:3px solid; vertical-align:middle; margin-right:6px; border-radius:2px; }
+  .legend .dot{ display:inline-block; width:10px; height:10px; border-radius:50%; vertical-align:middle; margin-right:6px; }
+
+  /* ---------- theory ---------- */
+  .theory{ display:grid; grid-template-columns:auto 1fr; gap:16px; }
+  .theory .n{ font-family:var(--font-display); font-size:28px; font-weight:700; color:rgba(255,255,255,0.18); line-height:1; width:40px; }
+  .theory .cite{ font-family:var(--font-mono); font-size:11px; color:var(--teal-400); margin-bottom:6px; }
+  .theory p{ margin:0; font-size:13.5px; color:var(--ink-dim); }
+  .theory .apply{ margin-top:10px; font-size:12.5px; color:var(--ink); background:rgba(32,115,245,0.1); border:1px solid rgba(32,115,245,0.3); border-radius:10px; padding:9px 12px; }
+  .theory .apply b{ color:var(--blue-500); font-family:var(--font-mono); font-weight:500; font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; display:block; margin-bottom:3px; }
+  .refs{ font-size:12.5px; color:var(--ink-dim); line-height:1.6; }
+  .refs li{ margin-bottom:8px; padding-left:1.6em; text-indent:-1.6em; list-style:none; }
+  .refs ul{ padding:0; margin:0; }
+  .flow-strip{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .flow-strip .fs{ background:var(--glass); border:1px solid var(--border-soft); padding:9px 13px; border-radius:12px; font-size:12.5px; font-weight:600; color:#fff; }
+  .flow-strip .ar{ color:var(--teal-400); font-family:var(--font-mono); }
+  ol.steps{ padding-left:20px; margin:0; } ol.steps li{ margin-bottom:10px; font-size:13.5px; color:var(--ink-dim); line-height:1.6; } ol.steps li b{ color:#fff; }
+  .note{ font-size:12px; color:var(--ink-faint); line-height:1.5; }
+  .nav-row{ display:flex; justify-content:space-between; gap:10px; margin-top:26px; flex-wrap:wrap; }
+  .toast{ position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(20px); background:rgba(4,27,69,0.92); border:1px solid var(--teal-400); color:#fff; padding:11px 18px; border-radius:100px; font-size:13px; font-weight:600; opacity:0; transition:all .3s; z-index:60; pointer-events:none; }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .hero-q{ font-family:var(--font-display); font-size:clamp(17px,2vw,22px); color:#fff; font-weight:600; font-style:italic; line-height:1.4; margin:0; }
+  .mtx{ width:100%; border-collapse:separate; border-spacing:0; font-size:12.5px; }
+  .mtx th,.mtx td{ padding:8px 8px; border-bottom:1px solid var(--border-soft); text-align:left; vertical-align:top; }
+  .mtx th{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink-faint); font-weight:500; }
+  .mtx td.c{ color:#fff; font-weight:600; }
+  .mtx td .hint{ font-size:11.5px; color:var(--ink-faint); font-weight:400; margin-top:2px; }
+  .mtx select{ padding:7px 28px 7px 10px; font-size:12.5px; border-radius:9px; min-width:64px; }
+  .mtx tfoot td{ border-bottom:none; border-top:2px solid var(--border-strong); font-family:var(--font-display); font-size:18px; color:#fff; font-weight:700; }
+  .mtx-wrap{ overflow-x:auto; }
+  .alt-tabs{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+  .alt-tab{ display:inline-flex; align-items:center; gap:8px; background:var(--glass); border:1px solid var(--border-soft); color:var(--ink-dim); padding:9px 14px; border-radius:12px; font-size:12.5px; font-weight:600; transition:all .2s; }
+  .alt-tab .k{ font-family:var(--font-mono); width:22px; height:22px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; font-size:11px; background:rgba(255,255,255,0.08); color:#fff; }
+  .alt-tab.active{ background:rgba(32,115,245,0.2); border-color:var(--blue-500); color:#fff; }
+  .alt-tab.short .k{ background:var(--teal-400); color:#04193f; }
+  .dim{ padding:12px 14px; }
+  .dim .dn{ font-family:var(--font-mono); font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--teal-400); margin-bottom:5px; }
+  .dim .dv{ font-size:12.5px; color:var(--ink); line-height:1.5; }
+  .dim .dv .u{ color:var(--amber); font-style:italic; }
+  .timeline{ display:grid; grid-template-columns:auto 1fr; gap:12px 16px; }
+  .timeline .tm{ font-family:var(--font-mono); font-size:11px; color:var(--teal-400); padding-top:3px; white-space:nowrap; }
+  .timeline .tx{ font-size:13.5px; color:var(--ink); line-height:1.55; }
+  .seg button.on[data-v="apoyo"], .seg button.on[data-v="lista"], .seg button.on[data-v="solida"], .seg button.on[data-v="no_aplica"], .seg button.on[data-v="si"]{ background:rgba(27,218,181,0.18); box-shadow:inset 0 0 0 1px var(--teal-400); }
+  .seg button.on[data-v="neutral"], .seg button.on[data-v="parcial"], .seg button.on[data-v="media"], .seg button.on[data-v="bajo"]{ background:rgba(32,115,245,0.22); box-shadow:inset 0 0 0 1px var(--blue-500); }
+  .seg button.on[data-v="insuficiente"], .seg button.on[data-v="baja"]{ background:rgba(245,185,66,0.2); box-shadow:inset 0 0 0 1px var(--amber); }
+  .seg button.on[data-v="resistencia"], .seg button.on[data-v="no_lista"], .seg button.on[data-v="no_pertinente"], .seg button.on[data-v="alta"], .seg button.on[data-v="no"]{ background:rgba(255,107,107,0.2); box-shadow:inset 0 0 0 1px var(--coral); }
+
+  /* ---------- laboratorio de prompts ---------- */
+  .need{ cursor:pointer; transition:border-color .2s, background .2s; }
+  .need:hover{ border-color:var(--border-strong); }
+  .need.on{ border-color:var(--teal-400); background:rgba(27,218,181,0.08); }
+  .need h3{ font-size:14.5px; margin-bottom:4px; }
+  .need p{ margin:0; font-size:12.5px; color:var(--ink-dim); line-height:1.5; }
+  .need .who{ font-family:var(--font-mono); font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--teal-400); margin-bottom:6px; }
+  textarea.prompt{ min-height:150px; font-family:var(--font-mono); font-size:12.5px; line-height:1.6; }
+  textarea.result{ min-height:170px; }
+  .analyzer{ display:grid; grid-template-columns:auto 1fr; gap:14px; align-items:start; }
+  .analyzer .score{ font-family:var(--font-display); font-size:34px; font-weight:700; color:#fff; line-height:1; }
+  .analyzer .score small{ font-size:13px; color:var(--ink-faint); }
+  .comp{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+  .comp div{ font-family:var(--font-mono); font-size:10.5px; padding:6px 8px; border-radius:8px; border:1px solid var(--border-soft); color:var(--ink-faint); }
+  .comp div.on{ border-color:var(--teal-400); color:var(--teal-400); background:rgba(27,218,181,0.1); }
+  @media (max-width:760px){ .comp{ grid-template-columns:1fr 1fr; } .analyzer{ grid-template-columns:1fr; } }
+  .sugg{ font-size:12.5px; color:var(--ink-dim); margin-top:8px; line-height:1.55; }
+  .sugg b{ color:var(--amber); }
+  .rub{ display:grid; grid-template-columns:1.4fr auto; gap:10px; align-items:center; padding:10px 0; border-bottom:1px dashed var(--border-soft); }
+  .rub:last-child{ border-bottom:none; }
+  .rub .c{ font-size:13px; color:#fff; font-weight:600; } .rub .c small{ display:block; color:var(--ink-faint); font-weight:400; font-size:11.5px; margin-top:2px; }
+  .rub .seg button{ padding:6px 11px; }
+  .issue{ display:grid; grid-template-columns:auto 1fr; gap:12px; align-items:start; padding:10px 0; border-bottom:1px dashed var(--border-soft); }
+  .issue:last-child{ border-bottom:none; }
+  .issue .t{ font-size:13.5px; color:#fff; font-weight:600; }
+  .issue .org{ margin-top:6px; }
+  .side{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width:860px){ .side{ grid-template-columns:1fr; } }
+  .side .col{ background:rgba(4,27,69,0.45); border:1px solid var(--border-soft); border-radius:14px; padding:14px; }
+  .side .col .label{ margin-bottom:6px; }
+  .side pre{ white-space:pre-wrap; font-family:var(--font-mono); font-size:12px; line-height:1.6; color:var(--ink); margin:0; max-height:260px; overflow:auto; }
+  .side .col.v2{ border-color:rgba(27,218,181,0.35); }
+  .verif{ display:grid; grid-template-columns:1.4fr 1.2fr auto auto; gap:8px; align-items:start; padding:10px 0; border-bottom:1px dashed var(--border-soft); }
+  .verif:last-child{ border-bottom:none; }
+  .verif textarea{ min-height:52px; }
+  @media (max-width:860px){ .verif{ grid-template-columns:1fr; } }
+  .matrix{ width:100%; border-collapse:separate; border-spacing:0; font-size:12.5px; }
+  .matrix th,.matrix td{ padding:10px 10px; border-bottom:1px solid var(--border-soft); text-align:left; vertical-align:top; }
+  .matrix th{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink-faint); font-weight:500; }
+  .matrix td.e{ color:#fff; font-weight:600; white-space:nowrap; width:170px; }
+  .matrix td.v{ color:var(--ink); white-space:pre-wrap; line-height:1.55; }
+  .matrix td.v .none{ color:var(--amber); font-style:italic; }
+  .matrix td.v2{ background:rgba(27,218,181,0.04); }
+  .delta{ font-family:var(--font-mono); font-size:11px; padding:3px 8px; border-radius:100px; border:1px solid; display:inline-block; margin-left:6px; }
+  .delta.up{ color:var(--teal-400); border-color:rgba(27,218,181,0.5); } .delta.dn{ color:var(--coral); border-color:rgba(255,107,107,0.5); } .delta.eq{ color:var(--ink-faint); border-color:var(--border-soft); }
+  .seg button.on[data-v="4"], .seg button.on[data-v="confirmada"], .seg button.on[data-v="ajustes"], .seg button.on[data-v="prompt"]{ background:rgba(27,218,181,0.18); box-shadow:inset 0 0 0 1px var(--teal-400); }
+  .seg button.on[data-v="3"], .seg button.on[data-v="borrador"], .seg button.on[data-v="modelo"]{ background:rgba(32,115,245,0.22); box-shadow:inset 0 0 0 1px var(--blue-500); }
+  .seg button.on[data-v="2"], .seg button.on[data-v="noverif"], .seg button.on[data-v="tarea"]{ background:rgba(245,185,66,0.2); box-shadow:inset 0 0 0 1px var(--amber); }
+  .seg button.on[data-v="1"], .seg button.on[data-v="incorrecta"], .seg button.on[data-v="talcual"], .seg button.on[data-v="nousar"]{ background:rgba(255,107,107,0.2); box-shadow:inset 0 0 0 1px var(--coral); }
+  .pattern{ display:grid; grid-template-columns:auto 1fr; gap:12px; padding:10px 0; border-bottom:1px dashed var(--border-soft); font-size:13px; }
+  .pattern:last-child{ border-bottom:none; }
+  .pattern .k{ font-family:var(--font-mono); font-size:11px; color:var(--teal-400); padding-top:2px; width:120px; }
+  .pattern .ex{ color:var(--ink-faint); font-family:var(--font-mono); font-size:11.5px; margin-top:3px; }
+  .sr{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+  textarea, input[type=number], input[type=date]{ width:100%; background:rgba(4,27,69,0.45); border:1px solid var(--border-soft); border-radius:12px; color:var(--ink); font-size:13.5px; padding:11px 13px; }
+  .chk{ display:grid; grid-template-columns:28px 1fr; gap:10px; padding:10px 0; border-bottom:1px solid var(--border-soft); }
+  .chk .ic{ width:24px; height:24px; border-radius:50%; display:grid; place-items:center; font-weight:700; font-family:var(--font-mono); font-size:13px; }
+  .chk.ok .ic{ background:var(--teal-400); color:#04193f; } .chk.alert .ic{ background:var(--amber); color:#2b1d00; } .chk.pend .ic{ background:rgba(255,255,255,.14); color:var(--ink); }
+  .chk .t{ font-weight:600; color:#fff; font-size:13.5px; } .chk .d{ font-size:13px; color:var(--ink-dim); }
+  .calcout{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; }
+  .calcout div{ background:var(--glass); border:1px solid var(--border-soft); border-radius:12px; padding:10px 12px; display:grid; gap:2px; }
+  .calcout b{ font-size:20px; color:#fff; font-family:var(--font-display); } .calcout span{ font-size:12px; color:var(--ink-dim); } .calcout .bad{ border-color:var(--amber); }
+  .crit-h{ display:flex; justify-content:space-between; gap:14px; flex-wrap:wrap; align-items:flex-start; }
+  .crit h3{ margin:0; font-size:15px; }
+  .wrow{ display:grid; gap:4px; justify-items:start; }
+  .cell{ background:var(--glass); border:1px solid var(--border-soft); border-radius:12px; padding:12px 14px; display:grid; gap:10px; align-content:start; }
+  .cell .tool{ font-family:var(--font-mono); font-size:11px; color:var(--teal-400); }
+  .cell p{ margin:0; font-size:13px; color:var(--ink); line-height:1.55; }
+  .src{ display:inline-block; font-family:var(--font-mono); font-size:10.5px; padding:2px 9px; border-radius:100px; border:1px solid; margin-right:8px; vertical-align:1px; }
+  .src.I{ border-color:var(--teal-400); color:var(--teal-400); } .src.P{ border-color:var(--amber); color:var(--amber); }
+  .src.R{ border-color:#8fb8ff; color:#8fb8ff; } .src.N{ border-color:#ff9a9a; color:#ff9a9a; }
+  .legend{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:10px; margin-top:6px; }
+  .legend div{ display:grid; gap:4px; justify-items:start; }
+  .mine-i{ padding:12px 0; border-bottom:1px dashed var(--border-soft); } .mine-i:last-child{ border-bottom:none; }
+  .seg button.on[data-v="np"]{ background:rgba(255,255,255,.16); }
+</style>
+</head>
+<body>
+<div class="noise" aria-hidden="true"></div>
+<header class="topbar">
+  <div class="topbar-row">
+    <div class="brand">
+      <img src="data:image/png;base64,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" alt="BIU Broward International University">
+      <div class="divider"></div>
+      <span class="tag">VIA7012 · Semana 7 · Taller de práctica · Formativa, 0 %</span>
+    </div>
+    <div class="top-actions">
+      <button class="pill-btn" id="btnReset" title="Borrar todo el trabajo y empezar de nuevo">Reiniciar</button>
+      <button class="pill-btn primary" id="btnDownloadTop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="6 11 12 17 18 11"/><path d="M4 21h16"/></svg>Ficha</button>
+    </div>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-tab="0"><span class="n">01</span>Fundamento<span class="done"></span></button>
+    <button class="tab" data-tab="1"><span class="n">02</span>Instrucciones<span class="done"></span></button>
+    <button class="tab" data-tab="2"><span class="n">03</span>Caso 1<span class="done"></span></button>
+    <button class="tab" data-tab="3"><span class="n">04</span>Caso 2<span class="done"></span></button>
+    <button class="tab" data-tab="4"><span class="n">05</span>Mis criterios y ficha<span class="done"></span></button>
+  </nav>
+</header>
+
+<main>
+<section class="panel active" data-panel="0">
+  <div class="eyebrow">VIA7012 · Semana 7 · Personalización, accesibilidad e inclusión</div>
+  <h1 class="title">Taller de práctica: decidir con evidencia sobre una solución de IA</h1>
+  <p class="lede">Este taller entrena el juicio que necesitas para tu evaluación calificada de la Semana 7 (R5), sin hacerla por ti. Trabajas con dos casos ficticios que traen un expediente de evidencia ya reunido. Tu tarea es leer la calidad de esa evidencia, puntuar, ponderar según la necesidad y decidir, con atención especial a la agencia del estudiante y a la sobreautomatización. El taller no usa tu herramienta, no genera texto y no escribe ninguna parte de tu informe. Es voluntario y vale 0 %.</p>
+  <div class="card accent" style="margin-bottom:26px;">
+    <div class="label">Pregunta esencial de la semana (Syllabus)</div>
+    <p class="hero-q">"¿Cómo puede la inteligencia artificial ampliar las oportunidades de aprendizaje sin profundizar desigualdades, excluir estudiantes ni debilitar la autonomía y la supervisión humana?"</p>
+  </div>
+  <h2>Cuatro lentes para decidir con criterio</h2>
+  <div class="stack">
+    <div class="card theory"><div class="n">1</div><div>
+      <h3>Personalizar no es automatizar</h3>
+      <div class="cite">Syllabus VIA7012, Semana 7 · Luckin (2018)</div>
+      <p>El Syllabus advierte que la personalización no debe entenderse solo como automatización. Dos sistemas pueden adaptar contenido al estudiante y diferir en quién decide: uno impone la ruta, el otro propone y deja elegir al estudiante y revisar al docente. Esa diferencia determina la agencia del estudiante y la responsabilidad del docente, y no aparece en una cifra de aciertos.</p>
+      <div class="apply"><b>Criterios 6 y 7 de los casos</b>Distingue quién decide qué en cada herramienta antes de puntuar.</div>
+    </div></div>
+    <div class="card theory"><div class="n">2</div><div>
+      <h3>No toda evidencia pesa igual</h3>
+      <div class="cite">Tipos de fuente usados en el taller</div>
+      <p>Un estudio independiente, la documentación del proveedor, la reseña de usuarios y la ausencia de información son cosas distintas. Una afirmación del proveedor puede ser cierta, pero no está comprobada por nadie más. Una puntuación alta sin evidencia independiente es una apuesta. El taller marca el tipo de fuente de cada dato y señala las puntuaciones que no tienen respaldo.</p>
+      <div class="apply"><b>Etiquetas de fuente en cada celda</b>Puntúa "No puntuable" cuando el expediente no permite saber.</div>
+    </div></div>
+    <div class="card theory"><div class="n">3</div><div>
+      <h3>El sesgo y la exclusión se preguntan, no se suponen ausentes</h3>
+      <div class="cite">Baker y Hawn (2022) · W3C (2018)</div>
+      <p>Baker y Hawn revisan cómo los sistemas educativos pueden funcionar peor para ciertos grupos de estudiantes. Que un proveedor no informe el desempeño por grupo no demuestra que no haya sesgo: demuestra que no se sabe. En accesibilidad, las pautas WCAG 2.1 del W3C ofrecen criterios verificables (contraste, uso con teclado, compatibilidad con lectores de pantalla); "cumple los estándares" sin decir cuáles no es una evidencia.</p>
+      <div class="apply"><b>Criterios 3, 4 y 5 de los casos</b>Pregunta qué grupo podría quedar fuera y qué dato permitiría saberlo.</div>
+    </div></div>
+    <div class="card theory"><div class="n">4</div><div>
+      <h3>Los pesos son una decisión que debes justificar</h3>
+      <div class="cite">Syllabus VIA7012, SLO 7.4</div>
+      <p>El total ponderado depende de los pesos que tú eliges según la necesidad. Si la herramienta que gana cambia cuando todos los criterios pesan igual, la decisión depende de tu ponderación y debes poder defenderla. En privacidad y accesibilidad el taller fija un umbral mínimo: un total alto no compensa una condición básica incumplida.</p>
+      <div class="apply"><b>Resultados de cada caso</b>Compara tu ranking con el ranking de pesos iguales.</div>
+    </div></div>
+  </div>
+  <h2 style="margin-top:28px;">Referencias de la carpeta</h2>
+  <div class="card refs"><ul id="refsList"></ul></div>
+  <div class="nav-row"><span></span><button class="pill-btn primary goto" data-goto="1">Instrucciones →</button></div>
+</section>
+
+<section class="panel" data-panel="1">
+  <div class="eyebrow">Instrucciones de uso</div>
+  <h1 class="title">Cómo se recorre el taller</h1>
+  <p class="lede">Dos casos ficticios, cada uno con una necesidad educativa y dos herramientas genéricas (A y B). Los expedientes no describen productos reales. Por cada caso lees, puntúas, ponderas y decides. Al final formulas tus propios criterios de selección.</p>
+  <div class="grid g2" style="margin-bottom:18px;">
+    <div class="card"><div class="label">Qué hace el taller</div><div class="flow-strip"><span class="fs">Leer el expediente</span><span class="ar">→</span><span class="fs">Puntuar 1 a 4 o "No puntuable"</span><span class="ar">→</span><span class="fs">Ponderar</span><span class="ar">→</span><span class="fs">Ver resultados y señales</span><span class="ar">→</span><span class="fs">Decidir</span></div></div>
+    <div class="card accent"><div class="label">Lo que el taller no hace</div><p style="margin:0; font-size:13.5px; color:var(--ink);">No te dice qué herramienta es mejor. Calcula totales con tus puntuaciones y pesos, aplica umbrales y señala puntuaciones sin respaldo. La decisión y su justificación son tuyas.</p></div>
+  </div>
+  <div class="card" style="margin-bottom:18px;">
+    <div class="label">Relación con la evidencia calificada R5 y el Syllabus</div>
+    <p style="margin:0 0 10px; font-size:13.5px; color:var(--ink);">La asignación de la Semana 7 (R5, 15 %) pide evaluar una solución de IA que tú eliges, en 11 aspectos, con una recomendación final. Este taller usa casos dados y 9 criterios propios para practicar el juicio. No sustituye ninguna parte de R5 y su ficha de práctica no es un borrador del informe.</p>
+    <p class="muted" style="margin:0; font-size:13px;">Resultados de aprendizaje que ejercita: SLO 7.2 (alineación entre solución, estudiantes y contexto), SLO 7.3 (sesgo, exclusión y sobreautomatización), SLO 7.4 (criterios para seleccionar o adaptar) y SLO 7.5 (agencia y supervisión). La alineación SLO–CLO–PLO oficial está en el Syllabus.</p>
+  </div>
+  <div class="grid g3">
+    <div class="card tight"><div class="label">Guardado</div><p style="margin:0; font-size:13px; color:var(--ink);">El avance se guarda en este navegador. "Reiniciar" borra todo tras confirmar.</p></div>
+    <div class="card tight"><div class="label">Duración estimada</div><p style="margin:0; font-size:13px; color:var(--ink);">60 a 90 minutos (estimación del diseño, no medida con estudiantes).</p></div>
+    <div class="card tight warn"><div class="label">Uso de IA</div><p style="margin:0; font-size:13px; color:var(--ink);">Puedes usar IA generativa con espíritu crítico, salvo que el anuncio de la semana indique otra cosa: verifica lo que produjo, evalúalo y declara su uso en la ficha.</p></div>
+  </div>
+  <div class="nav-row"><button class="pill-btn goto" data-goto="0">← Fundamento</button><button class="pill-btn primary goto" data-goto="2">Caso 1 →</button></div>
+</section>
+
+<section class="panel" data-panel="2">
+  <div class="eyebrow">Caso 1 · Personalización y agencia</div>
+  <h1 class="title" id="c1title"></h1>
+  <div id="caseBody1"></div>
+  <div class="nav-row"><button class="pill-btn goto" data-goto="1">← Instrucciones</button><button class="pill-btn primary goto" data-goto="3">Caso 2 →</button></div>
+</section>
+
+<section class="panel" data-panel="3">
+  <div class="eyebrow">Caso 2 · Accesibilidad e inclusión</div>
+  <h1 class="title" id="c2title"></h1>
+  <div id="caseBody2"></div>
+  <div class="nav-row"><button class="pill-btn goto" data-goto="2">← Caso 1</button><button class="pill-btn primary goto" data-goto="4">Mis criterios y cierre →</button></div>
+</section>
+
+<section class="panel" data-panel="4">
+  <div class="eyebrow">Mis criterios y ficha de práctica</div>
+  <h1 class="title">De los casos a tus propios criterios</h1>
+  <p class="lede">Después de dos decisiones, formula tres criterios que usarías para seleccionar o adaptar una solución de IA desde una perspectiva centrada en las personas, inclusiva y sustentable (SLO 7.4). Cada criterio debe poder comprobarse y tener un umbral mínimo. Los criterios son tuyos; el taller no los sugiere.</p>
+  <div class="grid g3" style="margin-bottom:22px;" id="sumKpis"></div>
+  <div class="card" style="margin-bottom:14px;" id="mineBody"></div>
+  <div class="grid g2" style="margin-bottom:18px;">
+    <div class="card"><div class="grid" style="gap:12px;">
+      <div class="field"><span class="fl">Nombre del doctorando</span><input type="text" data-ref="nombre" placeholder="Nombre y apellido"></div>
+      <div class="field"><span class="fl">Programa / cohorte (opcional)</span><input type="text" data-ref="programa" placeholder="Ej.: Doctorado en Educación Virtual — cohorte ..."></div>
+      <div class="field"><span class="fl">Declaración de uso de IA (obligatoria): si usaste alguna herramienta, cuál y para qué; si no, escríbelo</span><textarea data-ref="iaDecl" placeholder="Ej.: No usé IA generativa en este taller."></textarea></div>
+      <div class="field"><span class="fl">Reflexión: qué cambió en cómo lees la evidencia de una herramienta de IA</span><textarea data-ref="reflexion" placeholder="Cuatro a ocho líneas."></textarea></div>
+    </div></div>
+    <div class="card"><div class="label">Estado de la ficha</div><div id="checklist" style="font-size:13.5px; line-height:1.9;"></div></div>
+  </div>
+  <div class="row">
+    <button class="pill-btn primary" id="btnDownload" style="padding:13px 22px; font-size:14px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="6 11 12 17 18 11"/><path d="M4 21h16"/></svg>Descargar ficha de práctica (.html)</button>
+    <span class="note">Es una ficha de práctica. No sustituye el informe R5.</span>
+  </div>
+  <div class="nav-row"><button class="pill-btn goto" data-goto="3">← Caso 2</button><span></span></div>
+</section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+var STORE_KEY='via7012_s7_taller_practica_v1';
+
+/* ================= DATA ================= */
+var CR=[
+ {k:'nec',t:'Alineación con la necesidad',q:'¿Responde a la necesidad concreta de este grupo y de este currículo?'},
+ {k:'ped',t:'Valor pedagógico',q:'¿Hay evidencia de que mejora el aprendizaje, y de qué calidad?'},
+ {k:'acc',t:'Accesibilidad',q:'¿Pueden usarla estudiantes con distintas capacidades? ¿Qué se verificó y quién lo verificó?',thr:true},
+ {k:'inc',t:'Inclusión',q:'¿Funciona para estudiantes con distintas lenguas, contextos y apoyos?'},
+ {k:'ses',t:'Gestión del sesgo y la exclusión',q:'¿Hay datos de que funciona de forma comparable entre grupos? 4 = bien documentado; 1 = riesgo alto o evidencia de peor desempeño.'},
+ {k:'ag',t:'Agencia del estudiante',q:'¿El estudiante decide, o el sistema decide por él?'},
+ {k:'doc',t:'Rol y supervisión docente',q:'¿El docente puede ver, corregir y decidir, o queda como espectador?'},
+ {k:'pri',t:'Privacidad y datos',q:'¿Qué datos recoge, dónde los guarda, por cuánto tiempo y quién los verificó?',thr:true},
+ {k:'via',t:'Viabilidad y sustentabilidad',q:'¿Es sostenible en costo, conectividad y carga de trabajo para el docente?'}
+];
+var SRC={I:'Independiente',P:'Proveedor',R:'Reseñas',N:'Sin información'};
+var SRCD={I:'Estudio, auditoría o evaluación de un tercero sin interés comercial en la herramienta.',P:'Documentación, cifras o promesas del proveedor. Pueden ser ciertas, pero nadie más las comprobó.',R:'Opiniones de docentes o estudiantes usuarios. Informan experiencias, no miden.',N:'El expediente no dice nada, o solo una frase general.'};
+var DEC={A:'Elegir A',B:'Elegir B',adapt:'Adaptar con condiciones',none:'Ninguna por ahora'};
+var SC={'1':'1','2':'2','3':'3','4':'4','np':'No puntuable'};
+var WT={b:'Bajo',m:'Medio',a:'Alto'}, WV={b:1,m:2,a:3};
+
+var CASES={
+1:{
+ title:'Práctica adaptativa de álgebra en un colegio público',
+ ctx:'Colegio público de secundaria · 120 estudiantes de 9.º grado en tres grupos de 40 · conectividad irregular en casa · un grupo de estudiantes con apoyos de lectura.',
+ need:'Los docentes no pueden dar retroalimentación individual en grupos de 40. Buscan una herramienta de práctica de álgebra que ajuste los ejercicios al nivel de cada estudiante sin quitarle al docente la decisión pedagógica.',
+ A:{n:'Ruta automática',d:'El sistema asigna el siguiente ejercicio y bloquea el avance hasta alcanzar el dominio. El estudiante no puede saltar ni elegir. El docente recibe un reporte semanal.'},
+ B:{n:'Sugerencias con control',d:'El sistema sugiere tres ejercicios con la razón de cada uno. El estudiante elige. El docente puede reordenar la secuencia y ver en tiempo real quién se atasca.'},
+ dos:{
+  A:{nec:['P','Cubre 4 de las 6 unidades de álgebra del colegio, según la tabla de contenidos del proveedor. Faltan funciones y sistemas de ecuaciones.'],
+     ped:['I','Un estudio independiente en 9 escuelas, durante un semestre, con grupos de comparación, halló mejoras moderadas en una prueba de álgebra. No midió la retención a seis meses.'],
+     acc:['N','El proveedor no publica un informe de accesibilidad. Su página dice "diseñado para todos los estudiantes".'],
+     inc:['R','Docentes reseñan que los estudiantes con lectura lenta se bloquean en la misma etapa porque los enunciados no se pueden escuchar en voz alta.'],
+     ses:['N','No informa el desempeño por género, nivel socioeconómico ni lengua del hogar.'],
+     ag:['P','La ruta la fija el sistema. El estudiante no puede saltar ni elegir. El proveedor lo presenta como "evita la frustración".'],
+     doc:['P','Reporte semanal automático. El docente no puede cambiar la ruta de un estudiante.'],
+     pri:['P','Guarda el historial de respuestas con el nombre completo en servidores del proveedor. La política dice que lo retiene "el tiempo necesario".'],
+     via:['R','Licencia anual por estudiante. Las reseñas dicen que exige conexión constante y que se cae en horas de mucho uso.']},
+  B:{nec:['P','Cubre las 6 unidades. El docente puede cargar ejercicios propios.'],
+     ped:['P','Solo hay una cifra del proveedor: "mejora de 20 %" en un piloto interno de dos escuelas, sin grupo de comparación.'],
+     acc:['I','Auditoría independiente contra WCAG 2.1 AA (2025): cumple en uso con teclado y con lector de pantalla; falla en contraste en dos pantallas. El informe no confirma la corrección.'],
+     inc:['P','Ofrece enunciados con lectura en voz alta y tamaño ajustable. No hay datos de uso con estudiantes que los necesitan.'],
+     ses:['R','Un docente reporta que las sugerencias de estudiantes con historial bajo se concentran en ejercicios fáciles y repetidos.'],
+     ag:['P','Muestra tres opciones con su razón. El estudiante elige y puede pedir otras.'],
+     doc:['R','Docentes reseñan que pueden reordenar la secuencia y ver quién se atasca. Piden más formación inicial.'],
+     pri:['P','Usa identificadores en lugar de nombres. Ofrece borrado de datos a pedido. El tratamiento se describe en un contrato tipo.'],
+     via:['P','Funciona sin conexión y sincroniza después, según el proveedor. Cuesta 30 % más por estudiante.']}
+ }
+},
+2:{
+ title:'Subtítulos y resúmenes automáticos en un posgrado en línea',
+ ctx:'Programa de maestría virtual · 60 estudiantes · 12 con una lengua materna distinta a la de la clase · 3 con discapacidad auditiva declarada · 5 con conectividad baja.',
+ need:'Las clases sincrónicas se graban, y se necesita que todos accedan a ellas con subtítulos y con apoyo para repasar. Algunos estudiantes trabajan y ven las clases en diferido.',
+ A:{n:'Subtítulos y resumen automáticos',d:'Genera subtítulos y un resumen al terminar la clase y los publica de inmediato, sin revisión humana.'},
+ B:{n:'Subtítulos con revisión y glosario',d:'Genera subtítulos automáticos que un asistente revisa antes de publicar (hasta 24 horas). El docente carga un glosario del curso y aprueba el resumen antes de que se publique.'},
+ dos:{
+  A:{nec:['P','Subtítulos en 12 idiomas y un resumen publicados en menos de 10 minutos tras la clase.'],
+     ped:['N','No hay estudios sobre el efecto de los resúmenes automáticos en el aprendizaje.'],
+     acc:['R','Usuarios sordos reportan errores en términos técnicos y nombres propios que cambian el sentido. No hay forma de corregirlos.'],
+     inc:['P','Declara 95 % de precisión media en inglés y español. No informa el desempeño con acentos regionales ni con hablantes no nativos.'],
+     ses:['I','Una evaluación independiente de transcripción halló más errores con hablantes no nativos que con nativos, y la mayor diferencia en vocabulario técnico.'],
+     ag:['P','El estudiante recibe el resumen ya hecho y puede activar o apagar los subtítulos.'],
+     doc:['P','No requiere intervención docente. El docente no ve ni aprueba los textos antes de que se publiquen.'],
+     pri:['P','Procesa el audio en la nube del proveedor y conserva las grabaciones 12 meses "para mejorar el servicio".'],
+     via:['R','Costo bajo por hora. Docentes reportan ahorro de tiempo, pero algunos estudiantes dejan de asistir porque "ya tienen el resumen".']},
+  B:{nec:['P','Subtítulos revisados hasta 24 horas después. Sirve para grabaciones, no para subtítulos en vivo.'],
+     ped:['R','Estudiantes reportan que el glosario del curso les ayuda a seguir los términos técnicos. Nadie midió el aprendizaje.'],
+     acc:['I','Evaluación del servicio de accesibilidad de otra universidad: los subtítulos revisados cumplen los criterios de legibilidad, sincronía y formato que las pautas WCAG 2.1 piden para contenido pregrabado.'],
+     inc:['P','Admite un glosario por curso en varios idiomas. El proveedor no informa el desempeño con acentos no nativos.'],
+     ses:['N','No informa la tasa de error por grupo. La revisión humana puede corregir errores, pero nadie midió cuántos corrige.'],
+     ag:['P','El estudiante elige ver subtítulos, resumen o ambos, y puede reportar errores desde el reproductor.'],
+     doc:['P','El docente carga el glosario y aprueba el resumen antes de publicarlo. El proveedor estima 30 minutos por clase de 2 horas.'],
+     pri:['I','Auditoría de protección de datos de un tercero: procesamiento en la región contratada, borrado del audio tras la revisión y retención de 30 días documentada.'],
+     via:['P','Requiere un asistente de revisión. Según la cotización del proveedor, cuesta tres veces más por hora.']}
+ }
+}};
+var REFS=[
+ 'Baker, R. S., y Hawn, A. (2022). Algorithmic bias in education. <em>International Journal of Artificial Intelligence in Education, 32</em>(4), 1052–1092. https://doi.org/10.1007/s40593-021-00285-9',
+ 'Luckin, R. (2018). <em>Machine Learning and Human Intelligence: The Future of Education for the 21st Century.</em> UCL Institute of Education Press. (Lectura de la Semana 7 del Syllabus.)',
+ 'World Wide Web Consortium (W3C). (2018). <em>Web Content Accessibility Guidelines (WCAG) 2.1.</em> W3C Recommendation. https://www.w3.org/TR/WCAG21/'
+];
+
+/* ================= STATE ================= */
+var S;
+function fc(){ var w={}; CR.forEach(function(c){ w[c.k]='m'; }); return {w:w,s:{A:{},B:{}},wnote:'',dec:null,cond:'',verify:'',agency:''}; }
+function freshState(){ return {c1:fc(),c2:fc(),mine:[{crit:'',how:'',min:''},{crit:'',how:'',min:''},{crit:'',how:'',min:''}],refl:{nombre:'',programa:'',reflexion:'',iaDecl:''}}; }
+function mergeInto(a,b){ Object.keys(b||{}).forEach(function(k){ if(a[k]&&typeof a[k]==='object'&&!Array.isArray(a[k])&&b[k]&&typeof b[k]==='object'&&!Array.isArray(b[k])) mergeInto(a[k],b[k]); else if(b[k]!==undefined) a[k]=b[k]; }); }
+function load(){ S=freshState(); try{ var raw=window.localStorage.getItem(STORE_KEY); if(raw) mergeInto(S,JSON.parse(raw)); }catch(e){} }
+function save(){ try{ window.localStorage.setItem(STORE_KEY,JSON.stringify(S)); }catch(e){} }
+
+/* ================= HELPERS ================= */
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function $(sel,ctx){ return (ctx||document).querySelector(sel); }
+function $$(sel,ctx){ return Array.prototype.slice.call((ctx||document).querySelectorAll(sel)); }
+function toast(msg){ var t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(function(){ t.classList.remove('show'); },2400); }
+function getPath(p){ return p.split('.').reduce(function(o,k){ return o==null?undefined:o[k]; },S); }
+function setPath(p,v){ var ks=p.split('.'),o=S; for(var i=0;i<ks.length-1;i++){ if(o[ks[i]]==null) o[ks[i]]={}; o=o[ks[i]]; } o[ks[ks.length-1]]=v; }
+function seg(path,dict,cur,label){ var h='<div class="seg" data-path="'+path+'" role="group" aria-label="'+esc(label||'')+'">'; Object.keys(dict).forEach(function(o){ h+='<button type="button" data-v="'+o+'" class="'+(String(cur)===o?'on':'')+'" aria-pressed="'+(String(cur)===o)+'">'+esc(dict[o])+'</button>'; }); return h+'</div>'; }
+function ta(path,label,ph){ return '<div class="field"><span class="fl">'+esc(label)+'</span><textarea data-path="'+path+'" placeholder="'+esc(ph||'')+'">'+esc(getPath(path)||'')+'</textarea></div>'; }
+function dl(name,content,type){ var blob=new Blob([content],{type:type||'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(function(){ URL.revokeObjectURL(url); },1500); }
+function fmt(n){ return (Math.round(n*10)/10).toString().replace('.',','); }
+function words(t){ t=(t||'').trim(); return t?t.split(/\s+/).length:0; }
+function srcChip(t){ return '<span class="src '+t+'">'+SRC[t]+'</span>'; }
+
+/* ================= SCORING ================= */
+function cellsAll(n){ return CR.length*2; }
+function scoreOf(n,t,k){ return S['c'+n].s[t][k]; }
+function cellsFilled(n){ var c=0; ['A','B'].forEach(function(t){ CR.forEach(function(r){ if(scoreOf(n,t,r.k)) c++; }); }); return c; }
+function pct(n,t,mode){ var st=S['c'+n],num=0,den=0; CR.forEach(function(r){ var v=st.s[t][r.k]; if(!v) return; var w=mode==='eq'?1:WV[st.w[r.k]||'m']; if(v==='np'){ if(mode==='np1'){ num+=w*1; den+=w*4; } return; } num+=w*(+v); den+=w*4; }); return den?num/den*100:null; }
+function nScored(n,t){ return CR.filter(function(r){ var v=S['c'+n].s[t][r.k]; return v&&v!=='np'; }).length; }
+function ledger(n,t){ var o={I:0,P:0,R:0,N:0}; CR.forEach(function(r){ o[CASES[n].dos[t][r.k][0]]++; }); return o; }
+function flags(n,t){ var out=[],C=CASES[n],nm=t+' · '; CR.forEach(function(r){ var v=S['c'+n].s[t][r.k],tag=C.dos[t][r.k][0]; if(!v) return;
+  if(v==='4'&&tag!=='I') out.push({st:'alert',t:nm+r.t,d:'Puntaje 4 con evidencia de tipo "'+SRC[tag]+'". Un 4 pide respaldo independiente.'});
+  if(v!=='np'&&+v>=3&&tag==='N') out.push({st:'alert',t:nm+r.t,d:'Puntaje '+v+' con "sin información". Sin datos, lo prudente es "No puntuable" o un puntaje bajo.'});
+  if(r.thr){ if(v==='1') out.push({st:'alert',t:nm+r.t,d:'Bajo el umbral mínimo del taller (2). Un total alto no compensa esta condición.'}); if(v==='np') out.push({st:'alert',t:nm+r.t,d:'Umbral sin verificar: el expediente no permite saber si cumple el mínimo.'}); }
+  if(v==='np'&&tag!=='N') out.push({st:'pend',t:nm+r.t,d:'Marcaste "No puntuable" aunque el expediente trae información de tipo "'+SRC[tag]+'". Revisa si la información basta para puntuar con prudencia.'});
+ }); return out; }
+function pr(x){ return x==null?'—':fmt(x)+' %'; }
+
+/* ================= CASE RENDER ================= */
+function critCard(n,r,i){ var st=S['c'+n],C=CASES[n],h='<div class="card crit"><div class="crit-h"><div><h3>'+(i+1)+'. '+esc(r.t)+(r.thr?' <span class="note">(umbral mínimo 2)</span>':'')+'</h3><p class="note" style="margin:2px 0 0;">'+esc(r.q)+'</p></div><div class="wrow"><span class="fl">Peso para esta necesidad</span>'+seg('c'+n+'.w.'+r.k,WT,st.w[r.k]||'m','Peso de '+r.t)+'</div></div><div class="grid g2" style="margin-top:12px;">';
+ ['A','B'].forEach(function(t){ var d=C.dos[t][r.k]; h+='<div class="cell"><div class="tool">Herramienta '+t+' · '+esc(C[t].n)+'</div><p>'+srcChip(d[0])+esc(d[1])+'</p><div><span class="fl">Tu puntaje</span>'+seg('c'+n+'.s.'+t+'.'+r.k,SC,st.s[t][r.k],'Puntaje de la herramienta '+t+' en '+r.t)+'</div></div>'; });
+ return h+'</div></div>'; }
+function renderCase(n){ var C=CASES[n],st=S['c'+n];
+ $('#c'+n+'title').textContent=C.title;
+ var h='<div class="grid g2" style="margin-bottom:16px;"><div class="card accent"><div class="label">Contexto (ficticio)</div><p style="margin:0 0 12px;font-size:13.5px;color:var(--ink);">'+esc(C.ctx)+'</p><div class="label">Necesidad</div><p style="margin:0;font-size:13.5px;color:var(--ink);">'+esc(C.need)+'</p></div>'
+  +'<div class="stack"><div class="card tight"><div class="label">Herramienta A · '+esc(C.A.n)+'</div><p style="margin:0;font-size:13px;color:var(--ink);">'+esc(C.A.d)+'</p></div><div class="card tight"><div class="label">Herramienta B · '+esc(C.B.n)+'</div><p style="margin:0;font-size:13px;color:var(--ink);">'+esc(C.B.d)+'</p></div></div></div>';
+ h+='<div class="card" style="margin-bottom:22px;"><div class="label">Cómo leer el expediente</div><div class="legend">'+Object.keys(SRC).map(function(k){ return '<div>'+srcChip(k)+'<span class="note">'+esc(SRCD[k])+'</span></div>'; }).join('')+'</div><p class="note" style="margin:10px 0 0;">Escala de puntaje: 1 deficiente o riesgo alto · 2 débil · 3 aceptable · 4 sólido y respaldado. Marca "No puntuable" cuando el expediente no permite saber. El expediente es ficticio y no describe productos reales.</p></div>';
+ h+='<h2>1. Puntúa cada criterio y elige su peso</h2><div class="stack">'+CR.map(function(r,i){ return critCard(n,r,i); }).join('')+'</div>';
+ h+='<div class="card" style="margin-top:16px;">'+ta('c'+n+'.wnote','Por qué diste más peso a unos criterios que a otros, según la necesidad de este caso','Dos a cuatro líneas.')+'</div>';
+ h+='<h2 style="margin-top:28px;">2. Resultados con tus puntajes</h2><div id="res'+n+'"></div>';
+ h+='<h2 style="margin-top:28px;">3. Decide</h2><div class="card"><div class="field"><span class="fl">Tu decisión</span>'+seg('c'+n+'.dec',DEC,st.dec,'Decisión del caso '+n)+'</div><div class="grid g2" style="margin-top:14px;">'+ta('c'+n+'.cond','Condiciones para usarla (si adaptas, di cuál herramienta y qué cambia)','Qué debe cumplirse antes y durante el uso.')+ta('c'+n+'.verify','Qué verificarías antes de decidir, con quién y con qué dato','Ej.: pedir el informe por grupo al proveedor.')+'</div><div style="margin-top:14px;">'+ta('c'+n+'.agency','Cómo protege tu decisión la agencia del estudiante y el rol del docente','Quién decide qué.')+'</div></div>';
+ h+='<h2 style="margin-top:28px;">Señales de coherencia de tu decisión</h2><div class="card" id="sig'+n+'"></div>';
+ $('#caseBody'+n).innerHTML=h; refreshCase(n); }
+function kpi(lbl,val,read){ return '<div class="card kpi"><div class="val">'+val+'</div><div class="lbl">'+lbl+'</div><div class="read">'+read+'</div></div>'; }
+function chkList(arr){ if(!arr.length) return '<p class="note" style="margin:0;">Sin señales por ahora.</p>'; return arr.map(function(c){ return '<div class="chk '+c.st+'"><div class="ic">'+(c.st==='ok'?'✓':c.st==='alert'?'!':'·')+'</div><div><div class="t">'+esc(c.t)+'</div><div class="d">'+esc(c.d)+'</div></div></div>'; }).join(''); }
+function winner(a,b){ if(a==null||b==null) return null; if(Math.abs(a-b)<3) return 'tie'; return a>b?'A':'B'; }
+function winTxt(w){ return w==null?'sin datos':w==='tie'?'empate técnico':'gana '+w; }
+function resHTML(n){ var C=CASES[n],h='<div class="grid g2">';
+ ['A','B'].forEach(function(t){ var a=pct(n,t),e=pct(n,t,'eq'),c=pct(n,t,'np1'),L=ledger(n,t);
+  h+='<div class="card"><div class="label">Herramienta '+t+' · '+esc(C[t].n)+'</div><div class="grid g3" style="margin-top:8px;">'+kpi('Tus pesos',pr(a),'Total ponderado sobre los criterios que puntuaste.')+kpi('Pesos iguales',pr(e),'Todos los criterios pesan lo mismo.')+kpi('No puntuable = 1',pr(c),'Cuenta lo que no sabes como lo peor.')+'</div><p class="note" style="margin:10px 0 0;">Criterios puntuados: '+nScored(n,t)+' de '+CR.length+' · Fuentes del expediente: '+Object.keys(SRC).map(function(k){ return L[k]+' '+SRC[k].toLowerCase(); }).join(', ')+'.</p></div>'; });
+ h+='</div>';
+ var w1=winner(pct(n,'A'),pct(n,'B')),w2=winner(pct(n,'A','eq'),pct(n,'B','eq')),w3=winner(pct(n,'A','np1'),pct(n,'B','np1'));
+ var txt;
+ if(w1==null||w2==null||w3==null) txt='Puntúa al menos un criterio en cada herramienta para comparar.';
+ else if(w1===w2&&w2===w3) txt='El orden no cambia con pesos iguales ni al tratar lo que no sabes como lo peor: '+winTxt(w1)+'. La ponderación no decide el resultado.';
+ else txt='El orden cambia según cómo cuentes: con tus pesos, '+winTxt(w1)+'; con pesos iguales, '+winTxt(w2)+'; con "No puntuable = 1", '+winTxt(w3)+'. Tu decisión depende de tus pesos o de lo que no se sabe, y debes poder defenderlo. ("Empate técnico" = menos de 3 puntos; es un umbral del taller, no estadístico.)';
+ h+='<div class="card accent" style="margin-top:12px;"><div class="label">Lectura del ranking</div><p style="margin:0;font-size:13.5px;color:var(--ink);">'+esc(txt)+'</p></div>';
+ h+='<div class="grid g2" style="margin-top:12px;"><div class="card"><div class="label">Señales sobre tus puntajes · A</div>'+chkList(flags(n,'A'))+'</div><div class="card"><div class="label">Señales sobre tus puntajes · B</div>'+chkList(flags(n,'B'))+'</div></div>';
+ h+='<p class="note" style="margin:8px 0 0;">Son reglas del taller aplicadas a tus registros. No evalúan si tu juicio es correcto.</p>';
+ return h; }
+function sigList(n){ var st=S['c'+n],out=[],d=st.dec,t=(d==='A'||d==='B')?d:null;
+ out.push(d?{st:'ok',t:'Decisión registrada',d:DEC[d]+'.'}:{st:'pend',t:'Falta la decisión',d:'Elige una opción.'});
+ if(t){ var thr=CR.filter(function(r){return r.thr;}).map(function(r){return {r:r,v:st.s[t][r.k]};}),bad=thr.filter(function(x){return x.v==='1';}),unk=thr.filter(function(x){return !x.v||x.v==='np';});
+  if(bad.length) out.push({st:'alert',t:'Elegiste una herramienta bajo el umbral',d:'La herramienta '+t+' tiene puntaje 1 en '+bad.map(function(x){return x.r.t.toLowerCase();}).join(' y ')+'. Revisa si "elegir" es coherente con tu umbral.'});
+  else if(unk.length) out.push({st:'alert',t:'Umbral sin verificar en la herramienta elegida',d:'No puntuaste o dejaste como "No puntuable": '+unk.map(function(x){return x.r.t.toLowerCase();}).join(' y ')+'. Dilo en "qué verificarías".'});
+  else out.push({st:'ok',t:'Umbrales de accesibilidad y privacidad',d:'La herramienta elegida cumple el mínimo de 2 en ambos criterios, con la evidencia que declaraste.'});
+  var fl=flags(n,t).filter(function(f){return f.st==='alert'&&/Puntaje/.test(f.d);}).length;
+  if(fl) out.push({st:'alert',t:'Tu decisión descansa en puntajes sin respaldo',d:fl+' puntaje(s) de la herramienta elegida no tienen evidencia independiente o no tienen información. Indica cómo los comprobarías.'});
+  var o=t==='A'?'B':'A',pt=pct(n,t),po=pct(n,o);
+  if(pt!=null&&po!=null&&po-pt>=3) out.push({st:'alert',t:'Elegiste la herramienta con menor puntaje',d:'Con tus pesos, '+o+' queda '+fmt(po-pt)+' puntos arriba. Es válido si lo justificas en las condiciones.'});
+  var ag=st.s[t].ag; if(ag&&ag!=='np'&&+ag<=2) out.push({st:'alert',t:'Agencia del estudiante baja en la herramienta elegida',d:'Puntuaste '+ag+' en agencia. Explica en el campo de agencia cómo se compensa.'});
+ }
+ if(d==='adapt') out.push({st:'pend',t:'Adaptar exige decir qué cambia',d:'En las condiciones indica cuál herramienta adaptas y qué debe cambiar.'});
+ [['cond','Condiciones de uso'],['verify','Qué verificarías'],['agency','Agencia y rol docente']].forEach(function(f){ out.push(words(st[f[0]])>=6?{st:'ok',t:f[1],d:'Registrado.'}:{st:'pend',t:f[1],d:'Escribe al menos una oración completa.'}); });
+ return out; }
+function refreshCase(n){ var r=$('#res'+n); if(r) r.innerHTML=resHTML(n); var s=$('#sig'+n); if(s) s.innerHTML=chkList(sigList(n)); }
+function caseDone(n){ var st=S['c'+n]; return cellsFilled(n)===cellsAll(n)&&!!st.dec&&words(st.cond)>=6; }
+
+/* ================= MINE / REPORT ================= */
+function minOK(v){ return /\d|m[ií]nimo|al menos|no menos|m[aá]ximo|todos|ning[uú]n|cumpl/i.test(v||''); }
+function mineDone(){ return S.mine.every(function(m){ return m.crit.trim()&&m.how.trim()&&m.min.trim(); }); }
+function renderMine(){ var h=''; S.mine.forEach(function(m,i){ h+='<div class="mine-i"><div class="label">Criterio propio '+(i+1)+'</div><div class="grid g3"><div class="field"><span class="fl">Criterio</span><input type="text" data-path="mine.'+i+'.crit" value="'+esc(m.crit)+'" placeholder="Qué debe cumplir la solución"></div><div class="field"><span class="fl">Cómo se comprueba (qué prueba o evidencia)</span><textarea data-path="mine.'+i+'.how" placeholder="Evidencia verificable">'+esc(m.how)+'</textarea></div><div class="field"><span class="fl">Umbral mínimo</span><input type="text" data-path="mine.'+i+'.min" value="'+esc(m.min)+'" placeholder="Valor o condición mínima"></div></div></div>'; }); $('#mineBody').innerHTML=h; }
+function renderSum(){ var k=[caseDone(1),caseDone(2)].filter(Boolean).length,c=cellsFilled(1)+cellsFilled(2),m=S.mine.filter(function(x){return x.crit.trim()&&x.how.trim()&&x.min.trim();}).length;
+ $('#sumKpis').innerHTML=kpi('Casos decididos',k+'<small> / 2</small>','Puntaje completo, decisión y condiciones.')+kpi('Puntajes registrados',c+'<small> / 36</small>','Incluye "No puntuable".')+kpi('Criterios propios',m+'<small> / 3</small>','Con criterio, comprobación y umbral.'); }
+function renderChecklist(){ var mn=S.mine.filter(function(m){return m.min.trim();}),it=[['Caso 1 puntuado, decidido y con condiciones',caseDone(1)],['Caso 2 puntuado, decidido y con condiciones',caseDone(2)],['Tres criterios propios completos',mineDone()],['Umbrales con forma medible (señal)',mn.length===3&&mn.every(function(m){return minOK(m.min);})],['Declaración de uso de IA',!!S.refl.iaDecl.trim()],['Reflexión',!!S.refl.reflexion.trim()],['Nombre del doctorando',!!S.refl.nombre.trim()]];
+ $('#checklist').innerHTML=it.map(function(x){ return '<div><span style="color:'+(x[1]?'var(--teal-400)':'var(--amber)')+'; font-family:var(--font-mono);">'+(x[1]?'●':'○')+'</span> '+esc(x[0])+'</div>'; }).join(''); }
+function v(x){ return x&&String(x).trim()?esc(x):'—'; }
+function caseReport(n){ var C=CASES[n],st=S['c'+n],h='<h2>Caso '+n+'. '+esc(C.title)+'</h2><p class="meta">'+esc(C.ctx)+'</p><p><b>Necesidad:</b> '+esc(C.need)+'</p>';
+ h+='<table><tr><th>Criterio</th><th>Peso</th><th>A · '+esc(C.A.n)+'</th><th>B · '+esc(C.B.n)+'</th></tr>'+CR.map(function(r){ var cell=function(t){ var d=C.dos[t][r.k],s=st.s[t][r.k]; return (s?(s==='np'?'No puntuable':s):'—')+' ('+SRC[d[0]]+')'; }; return '<tr><td class="e">'+esc(r.t)+'</td><td>'+WT[st.w[r.k]||'m']+'</td><td>'+cell('A')+'</td><td>'+cell('B')+'</td></tr>'; }).join('')+'</table>';
+ h+='<table><tr><th>Total</th><th>A</th><th>B</th></tr><tr><td class="e">Tus pesos</td><td>'+pr(pct(n,'A'))+'</td><td>'+pr(pct(n,'B'))+'</td></tr><tr><td class="e">Pesos iguales</td><td>'+pr(pct(n,'A','eq'))+'</td><td>'+pr(pct(n,'B','eq'))+'</td></tr><tr><td class="e">No puntuable = 1</td><td>'+pr(pct(n,'A','np1'))+'</td><td>'+pr(pct(n,'B','np1'))+'</td></tr></table>';
+ h+='<p><b>Justificación de los pesos:</b></p><div class="pre">'+v(st.wnote)+'</div><p><b>Decisión:</b> '+(st.dec?DEC[st.dec]:'—')+'</p><p><b>Condiciones:</b></p><div class="pre">'+v(st.cond)+'</div><p><b>Qué verificaría:</b></p><div class="pre">'+v(st.verify)+'</div><p><b>Agencia del estudiante y rol docente:</b></p><div class="pre">'+v(st.agency)+'</div>';
+ var sg=flags(n,'A').concat(flags(n,'B'),sigList(n)).filter(function(c){return c.st==='alert';});
+ h+='<p><b>Señales de revisión pendientes ('+sg.length+'):</b></p>'+(sg.length?'<ul>'+sg.map(function(c){return '<li>'+esc(c.t)+': '+esc(c.d)+'</li>';}).join('')+'</ul>':'<p>Ninguna.</p>'); return h; }
+function buildReport(){ var s=S,nombre=s.refl.nombre.trim()||'(sin nombre)';
+ var h='<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>VIA7012 S7 · Ficha de práctica · '+esc(nombre)+'</title><style>body{font-family:Inter,Segoe UI,Arial,sans-serif;color:#1b2740;max-width:900px;margin:0 auto;padding:40px 28px;line-height:1.55;font-size:13.5px}h1{font-size:24px;color:#062B70;margin:0 0 4px}h2{font-size:17px;color:#062B70;border-bottom:2px solid #1BDAB5;padding-bottom:6px;margin:30px 0 10px}.meta{color:#5a6a8c;font-size:12.5px;margin-bottom:6px}.pre{white-space:pre-wrap;background:#f3f6fc;border:1px solid #d7e0f2;border-radius:10px;padding:10px 14px;margin-bottom:10px}table{width:100%;border-collapse:collapse;margin:8px 0 14px;font-size:12.5px}th,td{border:1px solid #d7e0f2;padding:8px 10px;text-align:left;vertical-align:top}th{background:#eef3fb;color:#062B70;font-weight:600}td.e{font-weight:600}.refs li{margin-bottom:6px;font-size:12.5px}@media print{body{padding:0}}</style></head><body>';
+ h+='<div class="meta">Broward International University · VIA7012 Introduction to AI in Sustainable Education · Semana 7 · Actividad formativa de práctica (0 %)</div><h1>Ficha de práctica: decidir con evidencia sobre una solución de IA</h1><div class="meta">'+esc(nombre)+(s.refl.programa.trim()?' · '+esc(s.refl.programa):'')+' · '+new Date().toLocaleDateString('es')+'</div>';
+ h+='<p class="meta">Esta ficha documenta una práctica con casos ficticios. No es el informe de la evidencia calificada R5 ni un borrador de ella.</p>';
+ h+=caseReport(1)+caseReport(2);
+ h+='<h2>Mis criterios de selección</h2><table><tr><th>Criterio</th><th>Cómo se comprueba</th><th>Umbral mínimo</th></tr>'+s.mine.map(function(m){ return '<tr><td class="e">'+v(m.crit)+'</td><td>'+v(m.how)+'</td><td>'+v(m.min)+'</td></tr>'; }).join('')+'</table>';
+ h+='<h2>Declaración de uso de IA</h2><div class="pre">'+v(s.refl.iaDecl)+'</div><h2>Reflexión</h2><div class="pre">'+v(s.refl.reflexion)+'</div>';
+ h+='<h2>Referencias</h2><ul class="refs">'+REFS.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul><p class="meta">Los expedientes son ficticios y describen tipos de herramienta, no productos reales. Documento producido por el doctorando como práctica formativa.</p></body></html>'; return h; }
+function download(){ var nm=(S.refl.nombre||'').trim().replace(/[^\wÀ-ſ]+/g,'_'); dl('VIA7012_S7_Ficha_Practica'+(nm?'_'+nm:'')+'.html',buildReport(),'text/html;charset=utf-8'); toast('Ficha descargada'); }
+
+/* ================= NAV + EVENTS ================= */
+function labelize(){ $$('input[data-path],textarea[data-path],input[data-ref],textarea[data-ref]').forEach(function(el){ if(el.getAttribute('aria-label')) return; var f=el.closest('.field'),l=f&&$('.fl',f); if(l) el.setAttribute('aria-label',l.textContent); }); }
+function markTabs(){ $('.tab[data-tab="2"]').classList.toggle('has-done',caseDone(1)); $('.tab[data-tab="3"]').classList.toggle('has-done',caseDone(2)); $('.tab[data-tab="4"]').classList.toggle('has-done',!!S.refl.nombre.trim()); }
+function showTab(i){ $$('.tab').forEach(function(t){ var on=+t.getAttribute('data-tab')===i; t.classList.toggle('active',on); if(on) t.setAttribute('aria-current','page'); else t.removeAttribute('aria-current'); }); $$('.panel').forEach(function(p){ p.classList.toggle('active',+p.getAttribute('data-panel')===i); }); window.scrollTo(0,0);
+ if(i===2) renderCase(1); if(i===3) renderCase(2); if(i===4){ renderMine(); renderSum(); renderChecklist(); $$('[data-ref]').forEach(function(el){ el.value=S.refl[el.getAttribute('data-ref')]||''; }); }
+ labelize(); markTabs(); }
+function renderAll(){ $('#refsList').innerHTML=REFS.map(function(r){return '<li>'+r+'</li>';}).join(''); $('#c1title').textContent=CASES[1].title; $('#c2title').textContent=CASES[2].title; markTabs(); labelize(); }
+function curCase(el){ var m=/^c(\d)\./.exec(el.getAttribute('data-path')||''); return m?+m[1]:0; }
+
+document.addEventListener('click',function(ev){ var t=ev.target.closest('button'); if(!t) return;
+ if(t.classList.contains('tab')){ showTab(+t.getAttribute('data-tab')); return; }
+ if(t.classList.contains('goto')){ showTab(+t.getAttribute('data-goto')); return; }
+ if(t.id==='btnDownload'||t.id==='btnDownloadTop'){ download(); return; }
+ if(t.id==='btnReset'){ if(window.confirm('Se borrarán todos los puntajes y textos de este taller. ¿Continuar?')){ try{ window.localStorage.removeItem(STORE_KEY); }catch(x){} S=freshState(); renderAll(); showTab(1); toast('Taller reiniciado'); } return; }
+ var sg=t.closest('.seg'); if(sg){ var path=sg.getAttribute('data-path'),vv=t.getAttribute('data-v'),cur=getPath(path),isW=/\.w\./.test(path); setPath(path,(!isW&&String(cur)===vv)?null:vv); save(); $$('button',sg).forEach(function(b){ var on=b.getAttribute('data-v')===String(getPath(path)); b.classList.toggle('on',on); b.setAttribute('aria-pressed',on); }); var n=curCase(sg); if(n) refreshCase(n); markTabs(); }
+});
+document.addEventListener('input',function(ev){ var el=ev.target;
+ if(el.hasAttribute('data-path')){ setPath(el.getAttribute('data-path'),el.value); save(); var n=curCase(el); clearTimeout(document._st); document._st=setTimeout(function(){ if(n) refreshCase(n); markTabs(); if($('.panel.active').getAttribute('data-panel')==='4'){ renderSum(); renderChecklist(); } },350); return; }
+ if(el.hasAttribute('data-ref')){ S.refl[el.getAttribute('data-ref')]=el.value; save(); markTabs(); clearTimeout(document._sf); document._sf=setTimeout(renderChecklist,400); }
+});
+
+load(); renderAll();
+})();
+
+</script>
+</body>
+</html>

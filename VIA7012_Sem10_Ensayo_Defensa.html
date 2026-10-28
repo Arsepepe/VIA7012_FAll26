@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VIA7012 · Semana 10 · Ensayo de la defensa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy-950:#041B45; --navy-900:#062B70; --navy-800:#073587;
+    --blue-700:#0944AF; --blue-500:#2073F5; --teal-400:#1BDAB5;
+    --amber:#F5B942; --coral:#FF6B6B; --gray-300:#BEC0BD; --white:#FFFFFF;
+    --glass:rgba(255,255,255,0.055); --glass-strong:rgba(255,255,255,0.09);
+    --border-soft:rgba(255,255,255,0.14); --border-strong:rgba(255,255,255,0.26);
+    --ink:#EAF0FC; --ink-dim:#AFC0E0; --ink-faint:#7C90BC;
+    --font-display:'Space Grotesk', sans-serif; --font-body:'Inter', sans-serif; --font-mono:'JetBrains Mono', monospace;
+  }
+  *,*::before,*::after{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0; min-height:100%;
+    background:
+      radial-gradient(ellipse 900px 600px at 88% -6%, rgba(32,115,245,0.24), transparent 60%),
+      radial-gradient(ellipse 700px 500px at -4% 106%, rgba(27,218,181,0.14), transparent 55%),
+      linear-gradient(160deg, var(--navy-950) 0%, var(--navy-900) 46%, var(--navy-800) 100%);
+    background-attachment:fixed; color:var(--ink); font-family:var(--font-body); -webkit-font-smoothing:antialiased;
+  }
+  ::selection{ background:var(--blue-500); color:#fff; }
+  button, input, select, textarea{ font-family:inherit; }
+  button{ cursor:pointer; }
+  a{ color:inherit; }
+  :focus-visible{ outline:2px solid var(--teal-400); outline-offset:2px; }
+  .noise{ position:fixed; inset:0; pointer-events:none; opacity:0.035; mix-blend-mode:overlay; z-index:0;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+  .mark{ position:relative; width:22px; height:22px; flex:0 0 auto; }
+  .mark span{ position:absolute; width:14px; height:14px; border-radius:3px; }
+  .mark span.t{ top:0; left:0; background:var(--teal-400); }
+  .mark span.b{ bottom:0; right:0; background:var(--blue-500); }
+
+  /* ---------- topbar + tabs ---------- */
+  header.topbar{ position:sticky; top:0; z-index:40; background:rgba(4,27,69,0.72); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); border-bottom:1px solid var(--border-soft); }
+  .topbar-row{ display:flex; align-items:center; justify-content:space-between; gap:14px; padding:14px clamp(16px,4vw,48px) 10px; }
+  .brand{ display:flex; align-items:center; gap:10px; min-width:0; }
+  .brand img{ height:22px; width:auto; display:block; opacity:0.95; }
+  .brand .divider{ width:1px; height:18px; background:var(--border-strong); }
+  .brand .tag{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:0.12em; color:var(--ink-dim); text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .top-actions{ display:flex; gap:8px; align-items:center; flex:0 0 auto; }
+  .pill-btn{ display:inline-flex; align-items:center; gap:7px; background:var(--glass); border:1px solid var(--border-soft); color:var(--ink); padding:8px 13px; border-radius:100px; font-size:12px; font-weight:600; transition:background .2s, border-color .2s; }
+  .pill-btn:hover{ background:var(--glass-strong); border-color:var(--border-strong); }
+  .pill-btn.primary{ background:linear-gradient(90deg,var(--teal-400),var(--blue-500)); color:#04193f; border:none; }
+  .pill-btn svg{ width:14px; height:14px; }
+  .tabs{ display:flex; gap:4px; padding:0 clamp(16px,4vw,48px); overflow-x:auto; scrollbar-width:none; }
+  .tabs::-webkit-scrollbar{ display:none; }
+  .tab{ flex:0 0 auto; background:transparent; border:none; border-bottom:2px solid transparent; color:var(--ink-dim); padding:10px 12px 11px; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:8px; white-space:nowrap; transition:color .2s, border-color .2s; }
+  .tab .n{ font-family:var(--font-mono); font-size:10.5px; color:var(--ink-faint); }
+  .tab:hover{ color:#fff; }
+  .tab.active{ color:#fff; border-bottom-color:var(--teal-400); }
+  .tab.active .n{ color:var(--teal-400); }
+  .tab .done{ width:7px; height:7px; border-radius:50%; background:var(--teal-400); display:none; }
+  .tab.has-done .done{ display:inline-block; }
+
+  /* ---------- layout ---------- */
+  main{ position:relative; z-index:1; max-width:1180px; margin:0 auto; padding:34px clamp(16px,4vw,48px) 90px; }
+  .panel{ display:none; }
+  .panel.active{ display:block; animation:fadeIn .45s ease; }
+  @keyframes fadeIn{ from{ opacity:0; transform:translateY(6px);} to{ opacity:1; transform:none;} }
+  @media (prefers-reduced-motion:reduce){ .panel.active{ animation:none; } html{ scroll-behavior:auto; } }
+
+  .eyebrow{ display:inline-flex; align-items:center; gap:8px; font-family:var(--font-mono); font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--teal-400); font-weight:500; margin-bottom:12px; }
+  .eyebrow::before{ content:''; width:16px; height:1px; background:var(--teal-400); }
+  h1.title{ font-family:var(--font-display); font-weight:700; color:#fff; font-size:clamp(26px,3.6vw,42px); line-height:1.1; letter-spacing:-0.01em; margin:0 0 14px; }
+  h2{ font-family:var(--font-display); font-weight:700; color:#fff; font-size:clamp(19px,2.2vw,24px); line-height:1.2; margin:0 0 10px; letter-spacing:-0.005em; }
+  h3{ font-family:var(--font-display); font-weight:600; color:#fff; font-size:16px; margin:0 0 8px; }
+  p.lede{ font-size:clamp(14.5px,1.5vw,17px); line-height:1.62; color:var(--ink-dim); max-width:780px; margin:0 0 26px; }
+  p{ line-height:1.62; }
+  .muted{ color:var(--ink-dim); }
+  .faint{ color:var(--ink-faint); }
+  .mono{ font-family:var(--font-mono); }
+  .label{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:0.1em; color:var(--teal-400); margin-bottom:8px; text-transform:uppercase; }
+
+  .card{ background:var(--glass); border:1px solid var(--border-soft); border-radius:18px; backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); padding:22px 24px; }
+  .card.tight{ padding:16px 18px; border-radius:14px; }
+  .card.accent{ border-color:rgba(27,218,181,0.35); background:rgba(27,218,181,0.06); }
+  .card.warn{ border-color:rgba(245,185,66,0.4); background:rgba(245,185,66,0.07); }
+  .card.danger{ border-color:rgba(255,107,107,0.4); background:rgba(255,107,107,0.07); }
+  .grid{ display:grid; gap:14px; }
+  .g2{ grid-template-columns:repeat(2,1fr); } .g3{ grid-template-columns:repeat(3,1fr); } .g4{ grid-template-columns:repeat(4,1fr); }
+  @media (max-width:860px){ .g3,.g4{ grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:600px){ .g2,.g3,.g4{ grid-template-columns:1fr;} }
+  .stack{ display:flex; flex-direction:column; gap:14px; }
+  .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .sp{ justify-content:space-between; }
+
+  .chip{ display:inline-flex; align-items:center; gap:6px; font-family:var(--font-mono); font-size:11.5px; font-weight:500; letter-spacing:0.02em; padding:7px 13px; border-radius:100px; border:1px solid var(--border-soft); background:var(--glass); color:var(--ink-dim); transition:all .2s; }
+  button.chip:hover{ border-color:var(--border-strong); color:#fff; }
+  .chip.on{ background:rgba(27,218,181,0.14); border-color:var(--teal-400); color:#fff; }
+  .chip.sm{ font-size:10.5px; padding:5px 10px; }
+  .tag-group{ display:flex; gap:6px; flex-wrap:wrap; }
+
+  /* ---------- forms ---------- */
+  textarea, input[type=text], select{ width:100%; background:rgba(4,27,69,0.45); border:1px solid var(--border-soft); border-radius:12px; color:var(--ink); font-size:13.5px; line-height:1.55; padding:11px 13px; transition:border-color .2s; }
+  textarea{ min-height:88px; resize:vertical; }
+  textarea:focus, input:focus, select:focus{ border-color:var(--teal-400); outline:none; }
+  select{ appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23AFC0E0' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; padding-right:34px; }
+  select option{ background:#062B70; color:#fff; }
+  .field{ display:flex; flex-direction:column; gap:6px; }
+  .field .fl{ font-size:12px; font-weight:600; color:var(--ink-dim); }
+  .seg{ display:inline-flex; background:rgba(4,27,69,0.45); border:1px solid var(--border-soft); border-radius:100px; padding:3px; gap:2px; flex-wrap:wrap; }
+  .seg button{ background:transparent; border:none; color:var(--ink-dim); font-size:12px; font-weight:600; padding:7px 12px; border-radius:100px; transition:all .18s; }
+  .seg button:hover{ color:#fff; }
+  .seg button.on{ background:var(--glass-strong); color:#fff; box-shadow:inset 0 0 0 1px var(--border-strong); }
+  .seg button.on[data-v="nucleo"], .seg button.on[data-v="fuerte"], .seg button.on[data-v="disponible"], .seg button.on[data-v="relevante"], .seg button.on[data-v="bidireccional"]{ background:rgba(27,218,181,0.18); box-shadow:inset 0 0 0 1px var(--teal-400); }
+  .seg button.on[data-v="periferico"], .seg button.on[data-v="debil"], .seg button.on[data-v="limitado"], .seg button.on[data-v="mas"], .seg button.on[data-v="descendente"], .seg button.on[data-v="ascendente"]{ background:rgba(32,115,245,0.22); box-shadow:inset 0 0 0 1px var(--blue-500); }
+  .seg button.on[data-v="tension"], .seg button.on[data-v="desconocido"], .seg button.on[data-v="desconocida"], .seg button.on[data-v="medio"]{ background:rgba(245,185,66,0.2); box-shadow:inset 0 0 0 1px var(--amber); }
+  .seg button.on[data-v="omitido"], .seg button.on[data-v="inexistente"], .seg button.on[data-v="ausente"], .seg button.on[data-v="irrelevante"], .seg button.on[data-v="bloqueado"], .seg button.on[data-v="alto"]{ background:rgba(255,107,107,0.2); box-shadow:inset 0 0 0 1px var(--coral); }
+
+  /* ---------- lab stepper ---------- */
+  .stepper{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:22px; }
+  .step{ display:inline-flex; align-items:center; gap:8px; background:var(--glass); border:1px solid var(--border-soft); color:var(--ink-dim); padding:8px 13px 8px 9px; border-radius:100px; font-size:12px; font-weight:600; transition:all .2s; }
+  .step .num{ width:20px; height:20px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:10.5px; background:rgba(255,255,255,0.08); color:var(--ink); }
+  .step.active{ background:rgba(32,115,245,0.2); border-color:var(--blue-500); color:#fff; }
+  .step.active .num{ background:var(--blue-700); color:#fff; }
+  .step.done .num{ background:var(--teal-400); color:#04193f; }
+  .step:hover{ border-color:var(--border-strong); color:#fff; }
+  .phase{ display:none; } .phase.active{ display:block; }
+  .phase-arrow{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; font-family:var(--font-mono); font-size:11px; color:var(--ink-faint); margin:0 0 22px; }
+  .phase-arrow b{ color:var(--teal-400); font-weight:500; }
+
+  /* ---------- actor cards ---------- */
+  .actor{ display:grid; grid-template-columns:1fr auto; gap:12px; align-items:start; }
+  .actor .meta{ min-width:0; }
+  .actor .name{ font-weight:700; color:#fff; font-size:14px; margin-bottom:3px; }
+  .actor .grp{ font-family:var(--font-mono); font-size:10px; letter-spacing:0.08em; color:var(--ink-faint); text-transform:uppercase; }
+  .actor .desc{ font-size:12.5px; color:var(--ink-dim); line-height:1.5; margin-top:6px; }
+  .actor .initial{ display:inline-block; font-family:var(--font-mono); font-size:9.5px; padding:2px 7px; border-radius:100px; border:1px solid rgba(32,115,245,0.5); color:var(--blue-500); margin-left:6px; vertical-align:middle; }
+  @media (max-width:600px){ .actor{ grid-template-columns:1fr; } }
+
+  .rel{ display:grid; grid-template-columns:1.2fr 1.6fr auto; gap:12px; align-items:center; }
+  .rel .pair{ font-weight:600; color:#fff; font-size:13.5px; }
+  .rel .pair span{ color:var(--teal-400); font-family:var(--font-mono); font-size:11px; }
+  .rel .hint{ font-size:12px; color:var(--ink-dim); line-height:1.5; }
+  .rel.na{ opacity:.45; }
+  .check{ display:inline-flex; align-items:center; gap:8px; font-size:12px; font-weight:600; color:var(--ink-dim); cursor:pointer; user-select:none; }
+  .check input{ width:16px; height:16px; accent-color:var(--teal-400); }
+  @media (max-width:860px){ .rel{ grid-template-columns:1fr; } }
+
+  .voice{ border-left:3px solid var(--blue-500); padding-left:14px; }
+  .voice .who{ font-size:12px; font-weight:700; color:#fff; }
+  .voice .role{ font-family:var(--font-mono); font-size:10.5px; color:var(--ink-faint); }
+  .voice q{ display:block; font-size:13.5px; color:var(--ink); line-height:1.6; margin:6px 0 0; font-style:italic; quotes:"“" "”"; }
+  .data-row{ display:flex; gap:10px; align-items:baseline; font-size:13px; padding:7px 0; border-bottom:1px dashed var(--border-soft); }
+  .data-row:last-child{ border-bottom:none; }
+  .data-row .k{ flex:0 0 46%; color:var(--ink-dim); }
+  .data-row .v{ color:#fff; font-weight:600; }
+  .data-row .v.unknown{ color:var(--amber); font-weight:500; font-style:italic; }
+
+  /* ---------- KPIs ---------- */
+  .kpi{ padding:16px 18px; }
+  .kpi .val{ font-family:var(--font-display); font-size:30px; font-weight:700; color:#fff; line-height:1; }
+  .kpi .val small{ font-size:14px; color:var(--ink-faint); font-weight:500; }
+  .kpi .lbl{ font-size:12px; color:var(--ink-dim); margin-top:6px; font-weight:600; }
+  .kpi .read{ font-size:12px; color:var(--ink-faint); margin-top:8px; line-height:1.5; }
+  .bar{ height:6px; background:rgba(255,255,255,0.08); border-radius:100px; overflow:hidden; margin-top:10px; }
+  .bar i{ display:block; height:100%; background:linear-gradient(90deg,var(--teal-400),var(--blue-500)); width:0; transition:width .6s ease; }
+
+  .consequence{ display:grid; grid-template-columns:auto 1fr; gap:12px; align-items:start; }
+  .consequence .ico{ width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:15px; background:rgba(255,107,107,0.15); border:1px solid rgba(255,107,107,0.4); }
+  .consequence.mild .ico{ background:rgba(245,185,66,0.15); border-color:rgba(245,185,66,0.4); }
+  .consequence.ok .ico{ background:rgba(27,218,181,0.15); border-color:rgba(27,218,181,0.4); }
+  .consequence .t{ font-weight:700; color:#fff; font-size:13.5px; margin-bottom:3px; }
+  .consequence .d{ font-size:13px; color:var(--ink-dim); line-height:1.55; }
+
+  .diff{ font-size:13px; }
+  .diff .add{ color:var(--teal-400); } .diff .rem{ color:var(--coral); } .diff .chg{ color:var(--amber); }
+  .diff li{ margin:4px 0; }
+
+  /* ---------- map ---------- */
+  .map-wrap{ background:rgba(4,27,69,0.5); border:1px solid var(--border-soft); border-radius:18px; padding:10px; overflow:hidden; }
+  .map-wrap svg{ width:100%; height:auto; display:block; }
+  .legend{ display:flex; gap:14px; flex-wrap:wrap; font-size:11.5px; color:var(--ink-dim); margin-top:10px; }
+  .legend i{ display:inline-block; width:22px; height:0; border-top:3px solid; vertical-align:middle; margin-right:6px; border-radius:2px; }
+  .legend .dot{ display:inline-block; width:10px; height:10px; border-radius:50%; vertical-align:middle; margin-right:6px; }
+
+  /* ---------- theory ---------- */
+  .theory{ display:grid; grid-template-columns:auto 1fr; gap:16px; }
+  .theory .n{ font-family:var(--font-display); font-size:28px; font-weight:700; color:rgba(255,255,255,0.18); line-height:1; width:40px; }
+  .theory .cite{ font-family:var(--font-mono); font-size:11px; color:var(--teal-400); margin-bottom:6px; }
+  .theory p{ margin:0; font-size:13.5px; color:var(--ink-dim); }
+  .theory .apply{ margin-top:10px; font-size:12.5px; color:var(--ink); background:rgba(32,115,245,0.1); border:1px solid rgba(32,115,245,0.3); border-radius:10px; padding:9px 12px; }
+  .theory .apply b{ color:var(--blue-500); font-family:var(--font-mono); font-weight:500; font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; display:block; margin-bottom:3px; }
+  .refs{ font-size:12.5px; color:var(--ink-dim); line-height:1.6; }
+  .refs li{ margin-bottom:8px; padding-left:1.6em; text-indent:-1.6em; list-style:none; }
+  .refs ul{ padding:0; margin:0; }
+  .flow-strip{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .flow-strip .fs{ background:var(--glass); border:1px solid var(--border-soft); padding:9px 13px; border-radius:12px; font-size:12.5px; font-weight:600; color:#fff; }
+  .flow-strip .ar{ color:var(--teal-400); font-family:var(--font-mono); }
+  ol.steps{ padding-left:20px; margin:0; } ol.steps li{ margin-bottom:10px; font-size:13.5px; color:var(--ink-dim); line-height:1.6; } ol.steps li b{ color:#fff; }
+  .note{ font-size:12px; color:var(--ink-faint); line-height:1.5; }
+  .nav-row{ display:flex; justify-content:space-between; gap:10px; margin-top:26px; flex-wrap:wrap; }
+  .toast{ position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(20px); background:rgba(4,27,69,0.92); border:1px solid var(--teal-400); color:#fff; padding:11px 18px; border-radius:100px; font-size:13px; font-weight:600; opacity:0; transition:all .3s; z-index:60; pointer-events:none; }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .hero-q{ font-family:var(--font-display); font-size:clamp(17px,2vw,22px); color:#fff; font-weight:600; font-style:italic; line-height:1.4; margin:0; }
+  .mtx{ width:100%; border-collapse:separate; border-spacing:0; font-size:12.5px; }
+  .mtx th,.mtx td{ padding:8px 8px; border-bottom:1px solid var(--border-soft); text-align:left; vertical-align:top; }
+  .mtx th{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink-faint); font-weight:500; }
+  .mtx td.c{ color:#fff; font-weight:600; }
+  .mtx td .hint{ font-size:11.5px; color:var(--ink-faint); font-weight:400; margin-top:2px; }
+  .mtx select{ padding:7px 28px 7px 10px; font-size:12.5px; border-radius:9px; min-width:64px; }
+  .mtx tfoot td{ border-bottom:none; border-top:2px solid var(--border-strong); font-family:var(--font-display); font-size:18px; color:#fff; font-weight:700; }
+  .mtx-wrap{ overflow-x:auto; }
+  .alt-tabs{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+  .alt-tab{ display:inline-flex; align-items:center; gap:8px; background:var(--glass); border:1px solid var(--border-soft); color:var(--ink-dim); padding:9px 14px; border-radius:12px; font-size:12.5px; font-weight:600; transition:all .2s; }
+  .alt-tab .k{ font-family:var(--font-mono); width:22px; height:22px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; font-size:11px; background:rgba(255,255,255,0.08); color:#fff; }
+  .alt-tab.active{ background:rgba(32,115,245,0.2); border-color:var(--blue-500); color:#fff; }
+  .alt-tab.short .k{ background:var(--teal-400); color:#04193f; }
+  .dim{ padding:12px 14px; }
+  .dim .dn{ font-family:var(--font-mono); font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--teal-400); margin-bottom:5px; }
+  .dim .dv{ font-size:12.5px; color:var(--ink); line-height:1.5; }
+  .dim .dv .u{ color:var(--amber); font-style:italic; }
+  .timeline{ display:grid; grid-template-columns:auto 1fr; gap:12px 16px; }
+  .timeline .tm{ font-family:var(--font-mono); font-size:11px; color:var(--teal-400); padding-top:3px; white-space:nowrap; }
+  .timeline .tx{ font-size:13.5px; color:var(--ink); line-height:1.55; }
+  .seg button.on[data-v="apoyo"], .seg button.on[data-v="lista"], .seg button.on[data-v="solida"], .seg button.on[data-v="no_aplica"], .seg button.on[data-v="si"]{ background:rgba(27,218,181,0.18); box-shadow:inset 0 0 0 1px var(--teal-400); }
+  .seg button.on[data-v="neutral"], .seg button.on[data-v="parcial"], .seg button.on[data-v="media"], .seg button.on[data-v="bajo"]{ background:rgba(32,115,245,0.22); box-shadow:inset 0 0 0 1px var(--blue-500); }
+  .seg button.on[data-v="insuficiente"], .seg button.on[data-v="baja"]{ background:rgba(245,185,66,0.2); box-shadow:inset 0 0 0 1px var(--amber); }
+  .seg button.on[data-v="resistencia"], .seg button.on[data-v="no_lista"], .seg button.on[data-v="no_pertinente"], .seg button.on[data-v="alta"], .seg button.on[data-v="no"]{ background:rgba(255,107,107,0.2); box-shadow:inset 0 0 0 1px var(--coral); }
+
+  /* ---------- laboratorio de prompts ---------- */
+  .need{ cursor:pointer; transition:border-color .2s, background .2s; }
+  .need:hover{ border-color:var(--border-strong); }
+  .need.on{ border-color:var(--teal-400); background:rgba(27,218,181,0.08); }
+  .need h3{ font-size:14.5px; margin-bottom:4px; }
+  .need p{ margin:0; font-size:12.5px; color:var(--ink-dim); line-height:1.5; }
+  .need .who{ font-family:var(--font-mono); font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--teal-400); margin-bottom:6px; }
+  textarea.prompt{ min-height:150px; font-family:var(--font-mono); font-size:12.5px; line-height:1.6; }
+  textarea.result{ min-height:170px; }
+  .analyzer{ display:grid; grid-template-columns:auto 1fr; gap:14px; align-items:start; }
+  .analyzer .score{ font-family:var(--font-display); font-size:34px; font-weight:700; color:#fff; line-height:1; }
+  .analyzer .score small{ font-size:13px; color:var(--ink-faint); }
+  .comp{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+  .comp div{ font-family:var(--font-mono); font-size:10.5px; padding:6px 8px; border-radius:8px; border:1px solid var(--border-soft); color:var(--ink-faint); }
+  .comp div.on{ border-color:var(--teal-400); color:var(--teal-400); background:rgba(27,218,181,0.1); }
+  @media (max-width:760px){ .comp{ grid-template-columns:1fr 1fr; } .analyzer{ grid-template-columns:1fr; } }
+  .sugg{ font-size:12.5px; color:var(--ink-dim); margin-top:8px; line-height:1.55; }
+  .sugg b{ color:var(--amber); }
+  .rub{ display:grid; grid-template-columns:1.4fr auto; gap:10px; align-items:center; padding:10px 0; border-bottom:1px dashed var(--border-soft); }
+  .rub:last-child{ border-bottom:none; }
+  .rub .c{ font-size:13px; color:#fff; font-weight:600; } .rub .c small{ display:block; color:var(--ink-faint); font-weight:400; font-size:11.5px; margin-top:2px; }
+  .rub .seg button{ padding:6px 11px; }
+  .issue{ display:grid; grid-template-columns:auto 1fr; gap:12px; align-items:start; padding:10px 0; border-bottom:1px dashed var(--border-soft); }
+  .issue:last-child{ border-bottom:none; }
+  .issue .t{ font-size:13.5px; color:#fff; font-weight:600; }
+  .issue .org{ margin-top:6px; }
+  .side{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width:860px){ .side{ grid-template-columns:1fr; } }
+  .side .col{ background:rgba(4,27,69,0.45); border:1px solid var(--border-soft); border-radius:14px; padding:14px; }
+  .side .col .label{ margin-bottom:6px; }
+  .side pre{ white-space:pre-wrap; font-family:var(--font-mono); font-size:12px; line-height:1.6; color:var(--ink); margin:0; max-height:260px; overflow:auto; }
+  .side .col.v2{ border-color:rgba(27,218,181,0.35); }
+  .verif{ display:grid; grid-template-columns:1.4fr 1.2fr auto auto; gap:8px; align-items:start; padding:10px 0; border-bottom:1px dashed var(--border-soft); }
+  .verif:last-child{ border-bottom:none; }
+  .verif textarea{ min-height:52px; }
+  @media (max-width:860px){ .verif{ grid-template-columns:1fr; } }
+  .matrix{ width:100%; border-collapse:separate; border-spacing:0; font-size:12.5px; }
+  .matrix th,.matrix td{ padding:10px 10px; border-bottom:1px solid var(--border-soft); text-align:left; vertical-align:top; }
+  .matrix th{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink-faint); font-weight:500; }
+  .matrix td.e{ color:#fff; font-weight:600; white-space:nowrap; width:170px; }
+  .matrix td.v{ color:var(--ink); white-space:pre-wrap; line-height:1.55; }
+  .matrix td.v .none{ color:var(--amber); font-style:italic; }
+  .matrix td.v2{ background:rgba(27,218,181,0.04); }
+  .delta{ font-family:var(--font-mono); font-size:11px; padding:3px 8px; border-radius:100px; border:1px solid; display:inline-block; margin-left:6px; }
+  .delta.up{ color:var(--teal-400); border-color:rgba(27,218,181,0.5); } .delta.dn{ color:var(--coral); border-color:rgba(255,107,107,0.5); } .delta.eq{ color:var(--ink-faint); border-color:var(--border-soft); }
+  .seg button.on[data-v="4"], .seg button.on[data-v="confirmada"], .seg button.on[data-v="ajustes"], .seg button.on[data-v="prompt"]{ background:rgba(27,218,181,0.18); box-shadow:inset 0 0 0 1px var(--teal-400); }
+  .seg button.on[data-v="3"], .seg button.on[data-v="borrador"], .seg button.on[data-v="modelo"]{ background:rgba(32,115,245,0.22); box-shadow:inset 0 0 0 1px var(--blue-500); }
+  .seg button.on[data-v="2"], .seg button.on[data-v="noverif"], .seg button.on[data-v="tarea"]{ background:rgba(245,185,66,0.2); box-shadow:inset 0 0 0 1px var(--amber); }
+  .seg button.on[data-v="1"], .seg button.on[data-v="incorrecta"], .seg button.on[data-v="talcual"], .seg button.on[data-v="nousar"]{ background:rgba(255,107,107,0.2); box-shadow:inset 0 0 0 1px var(--coral); }
+  .pattern{ display:grid; grid-template-columns:auto 1fr; gap:12px; padding:10px 0; border-bottom:1px dashed var(--border-soft); font-size:13px; }
+  .pattern:last-child{ border-bottom:none; }
+  .pattern .k{ font-family:var(--font-mono); font-size:11px; color:var(--teal-400); padding-top:2px; width:120px; }
+  .pattern .ex{ color:var(--ink-faint); font-family:var(--font-mono); font-size:11.5px; margin-top:3px; }
+  .sr{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+  textarea, input[type=number], input[type=date]{ width:100%; background:rgba(4,27,69,0.45); border:1px solid var(--border-soft); border-radius:12px; color:var(--ink); font-size:13.5px; padding:11px 13px; }
+  .chk{ display:grid; grid-template-columns:28px 1fr; gap:10px; padding:10px 0; border-bottom:1px solid var(--border-soft); }
+  .chk .ic{ width:24px; height:24px; border-radius:50%; display:grid; place-items:center; font-weight:700; font-family:var(--font-mono); font-size:13px; }
+  .chk.ok .ic{ background:var(--teal-400); color:#04193f; } .chk.alert .ic{ background:var(--amber); color:#2b1d00; } .chk.pend .ic{ background:rgba(255,255,255,.14); color:var(--ink); }
+  .chk .t{ font-weight:600; color:#fff; font-size:13.5px; } .chk .d{ font-size:13px; color:var(--ink-dim); }
+  .calcout{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; }
+  .calcout div{ background:var(--glass); border:1px solid var(--border-soft); border-radius:12px; padding:10px 12px; display:grid; gap:2px; }
+  .calcout b{ font-size:20px; color:#fff; font-family:var(--font-display); } .calcout span{ font-size:12px; color:var(--ink-dim); } .calcout .bad{ border-color:var(--amber); }
+</style>
+</head>
+<body>
+<div class="noise" aria-hidden="true"></div>
+<header class="topbar">
+  <div class="topbar-row">
+    <div class="brand">
+      <img src="data:image/png;base64,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" alt="BIU Broward International University">
+      <div class="divider"></div>
+      <span class="tag">VIA7012 · Semana 10 · Ensayo de la defensa · Herramienta de práctica</span>
+    </div>
+    <div class="top-actions">
+      <button class="pill-btn" id="btnReset" title="Borrar todo el trabajo y empezar de nuevo">Reiniciar</button>
+      <button class="pill-btn primary" id="btnDownloadTop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="6 11 12 17 18 11"/><path d="M4 21h16"/></svg>Ficha</button>
+    </div>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-tab="0"><span class="n">01</span>Qué se evalúa<span class="done"></span></button>
+    <button class="tab" data-tab="1"><span class="n">02</span>Plan de tiempo<span class="done"></span></button>
+    <button class="tab" data-tab="2"><span class="n">03</span>Práctica de preguntas<span class="done"></span></button>
+    <button class="tab" data-tab="3"><span class="n">04</span>Mi pregunta más difícil<span class="done"></span></button>
+    <button class="tab" data-tab="4"><span class="n">05</span>Resumen y ficha<span class="done"></span></button>
+  </nav>
+</header>
+
+<main>
+<section class="panel active" data-panel="0">
+  <div class="eyebrow">VIA7012 · Semana 10 · Presentación y defensa académica</div>
+  <h1 class="title">Ensayo de la defensa académica</h1>
+  <p class="lede">Esta herramienta sirve para ensayar la defensa de 10 a 12 minutos antes de presentarla. Armas el plan de tiempo, practicas preguntas del tipo que puede hacer el profesor o un compañero, y registras cuáles respondiste con razones y cuáles no. No evalúa tu propuesta, no genera respuestas y no reemplaza la evaluación del facilitador. Es de uso voluntario y no tiene nota.</p>
+  <div class="grid g2" style="margin-bottom:22px;">
+    <div class="card accent"><div class="label">Qué pide el Syllabus (Semana 10, Parte B)</div>
+      <p style="margin:0 0 8px; font-size:13.5px; color:var(--ink);">Presentación profesional de aproximadamente 10 a 12 minutos, seguida de preguntas del profesor o de compañeros. Debes demostrar capacidad para:</p>
+      <ul style="margin:0; padding-left:18px; font-size:13.5px; color:var(--ink); line-height:1.7;"><li>justificar tus decisiones;</li><li>interpretar evidencia;</li><li>reconocer limitaciones;</li><li>responder a cuestionamientos éticos y técnicos;</li><li>explicar mecanismos de supervisión humana;</li><li>defender la viabilidad y sustentabilidad de tu propuesta.</li></ul>
+    </div>
+    <div class="card"><div class="label">Cómo se evalúa (Rúbrica R8, 10 %)</div>
+      <div class="mtx-wrap"><table class="mtx"><caption class="sr">Criterios de la rúbrica R8</caption><thead><tr><th scope="col">CLO</th><th scope="col">Qué se observa</th><th scope="col">Pts</th></tr></thead><tbody>
+        <tr><td>CLO1</td><td>Explica con claridad los fundamentos de IA y la lógica de la propuesta.</td><td>2</td></tr>
+        <tr><td>CLO2</td><td>Interpreta evidencia y defiende valor educativo, inclusión, viabilidad y sustentabilidad.</td><td>3</td></tr>
+        <tr><td>CLO3</td><td>Reconoce límites, responde preguntas éticas y técnicas y explica la supervisión humana.</td><td>2</td></tr>
+        <tr><td>CLO4</td><td>Justifica decisiones y recomendaciones con investigación y responde objeciones con argumentos.</td><td>3</td></tr>
+      </tbody></table></div>
+      <p class="muted" style="margin:10px 0 0; font-size:13px;">La claridad y el tiempo de 10 a 12 minutos son condiciones de la presentación; la rúbrica no los puntúa por separado.</p>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:18px;"><div class="label">Cómo usar esta herramienta</div>
+    <ol class="steps"><li><b>Plan de tiempo (02):</b> reparte los minutos y escribe el mensaje central de cada bloque.</li><li><b>Práctica (03):</b> saca una pregunta, responde en voz alta con el cronómetro y anota cómo te fue.</li><li><b>Mi pregunta más difícil (04):</b> escribe la objeción que más temes y prepara una respuesta honesta.</li><li><b>Resumen (05):</b> revisa tu preparación y descarga la ficha de ensayo.</li></ol>
+  </div>
+  <div class="grid g3">
+    <div class="card tight"><div class="label">Guardado</div><p style="margin:0; font-size:13px; color:var(--ink);">El avance se guarda en este navegador. "Reiniciar" borra todo tras confirmar.</p></div>
+    <div class="card tight"><div class="label">Sobre las preguntas</div><p style="margin:0; font-size:13px; color:var(--ink);">Son preguntas tipo redactadas para este ensayo. El tribunal puede hacer otras, y es probable que pregunte por lo más débil de tu propuesta.</p></div>
+    <div class="card tight warn"><div class="label">Uso de IA</div><p style="margin:0; font-size:13px; color:var(--ink);">Esta herramienta no usa IA. Puedes ensayar con una herramienta de IA con espíritu crítico, salvo que el anuncio de la semana indique otra cosa: verifica lo que produce y declara su uso.</p></div>
+  </div>
+  <div class="nav-row"><span></span><button class="pill-btn primary goto" data-goto="1">Plan de tiempo →</button></div>
+</section>
+
+<section class="panel" data-panel="1">
+  <div class="eyebrow">Plan de tiempo</div>
+  <h1 class="title">Reparte los 10 a 12 minutos</h1>
+  <p class="lede">La estructura inicial sigue las secciones del proyecto final. Ajusta los minutos y escribe, en una frase, qué debe quedar claro al terminar cada bloque. Si un bloque no tiene un mensaje central, probablemente sobra.</p>
+  <div class="grid g3" style="margin-bottom:18px;" id="planKpis"></div>
+  <div id="planBody"></div>
+  <div class="nav-row"><button class="pill-btn goto" data-goto="0">← Qué se evalúa</button><button class="pill-btn primary goto" data-goto="2">Práctica de preguntas →</button></div>
+</section>
+
+<section class="panel" data-panel="2">
+  <div class="eyebrow">Práctica de preguntas</div>
+  <h1 class="title">Responde en voz alta, con cronómetro</h1>
+  <p class="lede">Elige un grupo o todos, saca una pregunta y responde en voz alta antes de escribir nada. Después anota cómo te fue con el mismo criterio de la rúbrica: razones y evidencia, respuesta parcial, o evasión. Las preguntas ya practicadas no se repiten hasta agotar el grupo.</p>
+  <div id="pracBody"></div>
+  <div class="nav-row"><button class="pill-btn goto" data-goto="1">← Plan de tiempo</button><button class="pill-btn primary goto" data-goto="3">Mi pregunta más difícil →</button></div>
+</section>
+
+<section class="panel" data-panel="3">
+  <div class="eyebrow">Mi pregunta más difícil</div>
+  <h1 class="title">La objeción que más temes</h1>
+  <p class="lede">Todo tribunal pregunta por lo más débil. Escríbelo antes de que lo haga otro. La respuesta honesta suele combinar tres cosas: reconocer lo que no sabes, decir qué evidencia sí tienes, y señalar qué cambiaría tu recomendación.</p>
+  <div class="card" style="margin-bottom:14px;" id="hardBody"></div>
+  <div class="nav-row"><button class="pill-btn goto" data-goto="2">← Práctica</button><button class="pill-btn primary goto" data-goto="4">Resumen →</button></div>
+</section>
+
+<section class="panel" data-panel="4">
+  <div class="eyebrow">Resumen y ficha de ensayo</div>
+  <h1 class="title">Cómo vas de preparación</h1>
+  <p class="lede">Esto es un panorama de tu ensayo, no una predicción de tu nota. Los grupos con menos práctica o más respuestas parciales son donde conviene ensayar más.</p>
+  <div class="grid g3" style="margin-bottom:22px;" id="sumKpis"></div>
+  <div class="card" style="margin-bottom:22px;"><div class="label">Cobertura por tipo de pregunta</div><div class="mtx-wrap"><table class="mtx" id="covTable"></table></div></div>
+  <div class="grid g2" style="margin-bottom:18px;">
+    <div class="card"><div class="grid" style="gap:12px;">
+      <div class="field"><span class="fl">Nombre del doctorando</span><input type="text" data-ref="nombre" placeholder="Nombre y apellido"></div>
+      <div class="field"><span class="fl">Programa / cohorte (opcional)</span><input type="text" data-ref="programa" placeholder="Ej.: Doctorado en Educación Virtual — cohorte ..."></div>
+    </div></div>
+    <div class="card"><div class="label">Lista de preparación</div><div id="checklist" style="font-size:13.5px; line-height:1.9;"></div></div>
+  </div>
+  <div class="row">
+    <button class="pill-btn primary" id="btnDownload" style="padding:13px 22px; font-size:14px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="6 11 12 17 18 11"/><path d="M4 21h16"/></svg>Descargar ficha de ensayo (.html)</button>
+    <span class="note">Es para tu uso. No se entrega ni se califica.</span>
+  </div>
+  <div class="nav-row"><button class="pill-btn goto" data-goto="3">← Mi pregunta más difícil</button><span></span></div>
+</section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+var STORE_KEY='via7012_s10_ensayo_defensa_v1';
+var SEGS=[['Contexto y problema educativo',1.5],['Solución de IA propuesta',1.5],['Evidencia y fundamentación',2],['Riesgos y limitaciones',2],['Accesibilidad, inclusión y equidad',1],['Gobernanza y supervisión humana',1.5],['Viabilidad, sustentabilidad y recomendación',1.5]];
+var GROUPS=[
+ {id:'fund',t:'Explicar fundamentos y lógica de la propuesta',clo:'CLO1',qs:['Explique a un directivo sin formación técnica cómo funciona la solución, en tres frases.','¿Qué tipo de IA es y qué hace con los datos que recibe?','¿Qué puede y qué no puede hacer este tipo de sistema?','¿Por qué esa lógica sirve para el problema que usted describió?']},
+ {id:'just',t:'Justificar decisiones',clo:'CLO4',qs:['¿Por qué eligió esta solución y no una alternativa sin IA?','¿Qué decisión de su propuesta cambiaría si el presupuesto se redujera a la mitad?','¿Qué descartó durante el proceso y por qué?','¿Qué parte de su propuesta es una apuesta y no una conclusión de la evidencia?']},
+ {id:'evid',t:'Interpretar evidencia',clo:'CLO2',qs:['¿Qué estudio o dato respalda más su propuesta y qué no prueba?','¿La evidencia que cita se obtuvo en una población parecida a la suya?','¿Cómo sabría que la intervención funcionó y que los estudiantes no mejoraron por otra causa?','¿Qué dato contradictorio encontró y cómo lo trató?']},
+ {id:'lim',t:'Reconocer limitaciones',clo:'CLO3',qs:['¿Cuál es la limitación más seria de su propuesta?','¿Qué no sabe todavía y cómo lo averiguaría?','¿En qué escenario su propuesta no funcionaría?','¿Qué parte de su análisis depende de datos que usted no tiene?']},
+ {id:'etic',t:'Responder cuestionamientos éticos y técnicos',clo:'CLO3',qs:['¿Quién podría salir perjudicado por su solución y cómo lo sabría?','¿Qué pasa con los datos de los estudiantes si el proveedor cambia de condiciones o cierra?','¿Cómo le explicaría a un estudiante por qué el sistema lo clasificó de cierta forma?','¿Qué haría si el sistema falla de forma sistemática con un grupo de estudiantes?']},
+ {id:'sup',t:'Explicar la supervisión humana',clo:'CLO3',qs:['¿Qué decisiones no delegaría nunca en el sistema?','¿Quién responde si el sistema se equivoca y el docente confió en él?','¿Cómo puede un estudiante impugnar una decisión apoyada por IA?','¿Cómo evitaría que la supervisión se vuelva una firma automática?']},
+ {id:'viab',t:'Defender viabilidad y sustentabilidad',clo:'CLO2',qs:['¿Qué recursos necesita al tercer año, cuando termine el entusiasmo inicial?','¿Qué capacidad institucional debe existir antes de empezar?','¿Cómo escalaría la propuesta y qué se rompería al escalar?','¿Qué dependencia tecnológica o costo permanente crea su propuesta?']}
+];
+var RATE={full:'Con razones y evidencia',part:'En parte, sin evidencia suficiente',no:'Evadí o no supe responder'};
+var S,T={left:90,run:false,id:null,cur:null};
+function freshState(){ var seg=SEGS.map(function(x){return {min:String(x[1]),msg:'',ev:''};}); return {plan:seg,prac:{g:'todas',q:null,sec:'90',log:[]},hard:{q:'',a:'',cond:''},refl:{nombre:'',programa:''}}; }
+function mergeInto(a,b){ Object.keys(b||{}).forEach(function(k){ if(a[k]&&typeof a[k]==='object'&&!Array.isArray(a[k])&&b[k]&&typeof b[k]==='object'&&!Array.isArray(b[k])) mergeInto(a[k],b[k]); else if(b[k]!==undefined) a[k]=b[k]; }); }
+function load(){ S=freshState(); try{ var raw=window.localStorage.getItem(STORE_KEY); if(raw){ var o=JSON.parse(raw); mergeInto(S,o); if(Array.isArray(o.plan)&&o.plan.length===SEGS.length) S.plan=o.plan; if(Array.isArray(o.prac&&o.prac.log)) S.prac.log=o.prac.log; } }catch(e){} }
+function save(){ try{ window.localStorage.setItem(STORE_KEY,JSON.stringify(S)); }catch(e){} }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function $(s,c){ return (c||document).querySelector(s); }
+function $$(s,c){ return Array.prototype.slice.call((c||document).querySelectorAll(s)); }
+function toast(m){ var t=$('#toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(function(){ t.classList.remove('show'); },2400); }
+function getPath(p){ return p.split('.').reduce(function(o,k){ return o==null?undefined:o[k]; },S); }
+function setPath(p,v){ var ks=p.split('.'),o=S; for(var i=0;i<ks.length-1;i++){ if(o[ks[i]]==null) o[ks[i]]={}; o=o[ks[i]]; } o[ks[ks.length-1]]=v; }
+function seg(path,dict,cur){ var h='<div class="seg" data-path="'+path+'" role="group">'; Object.keys(dict).forEach(function(o){ h+='<button type="button" data-v="'+o+'" class="'+(String(cur)===o?'on':'')+'" aria-pressed="'+(String(cur)===o)+'">'+esc(dict[o])+'</button>'; }); return h+'</div>'; }
+function ta(path,label,ph){ return '<div class="field"><span class="fl">'+esc(label)+'</span><textarea data-path="'+path+'" placeholder="'+esc(ph||'')+'">'+esc(getPath(path)||'')+'</textarea></div>'; }
+function dl(name,c,type){ var b=new Blob([c],{type:type||'text/plain;charset=utf-8'}),u=URL.createObjectURL(b),a=document.createElement('a'); a.href=u; a.download=name; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(function(){ URL.revokeObjectURL(u); },1500); }
+function fmt(n){ return (Math.round(n*10)/10).toString().replace('.',','); }
+function num(x){ var v=parseFloat(String(x).replace(',','.')); return isNaN(v)||v<0?0:v; }
+function total(){ return S.plan.reduce(function(a,p){return a+num(p.min);},0); }
+function gOf(id){ return GROUPS.filter(function(g){return g.id===id;})[0]; }
+
+/* PLAN */
+function planStatus(){ var t=total(); return t<10?'bajo':t>12?'alto':'ok'; }
+function renderPlan(){ var t=total(),st=planStatus(),msgs=S.plan.filter(function(p){return p.msg.trim();}).length;
+ $('#planKpis').innerHTML='<div class="card kpi"><div class="val">'+fmt(t)+'<small> min</small></div><div class="lbl">Tiempo total planificado</div><div class="read">'+(st==='ok'?'Dentro de los 10 a 12 minutos.':st==='bajo'?'Por debajo de 10 minutos.':'Por encima de 12 minutos.')+'</div></div><div class="card kpi"><div class="val">'+msgs+'<small> / '+SEGS.length+'</small></div><div class="lbl">Bloques con mensaje central</div><div class="bar"><i style="width:'+(msgs/SEGS.length*100)+'%"></i></div></div><div class="card kpi"><div class="val">'+S.plan.filter(function(p){return p.ev.trim();}).length+'<small> / '+SEGS.length+'</small></div><div class="lbl">Bloques con evidencia señalada</div><div class="read">Cada afirmación importante debería tener una fuente a la mano.</div></div>';
+ $('#planBody').innerHTML=SEGS.map(function(x,i){ var p=S.plan[i]; return '<div class="card" style="margin-bottom:12px;"><div class="grid" style="grid-template-columns:minmax(0,1fr) 120px; gap:12px; align-items:end;"><div><div class="label">Bloque '+(i+1)+' · '+esc(x[0])+'</div></div><div class="field"><span class="fl">Minutos</span><input type="number" min="0" step="0.5" data-path="plan.'+i+'.min" value="'+esc(p.min)+'"></div></div><div class="grid g2" style="gap:12px; margin-top:10px;"><div class="field"><span class="fl">Mensaje central: qué debe quedar claro al terminar este bloque</span><textarea data-path="plan.'+i+'.msg" placeholder="Una frase.">'+esc(p.msg)+'</textarea></div><div class="field"><span class="fl">Evidencia o fuente que lo respalda</span><textarea data-path="plan.'+i+'.ev" placeholder="Autor y año, dato, tabla de tu documento.">'+esc(p.ev)+'</textarea></div></div></div>'; }).join(''); labelize(); }
+
+/* PRACTICA */
+function asked(){ return S.prac.log.map(function(l){return l.q;}); }
+function pool(){ var gs=S.prac.g==='todas'?GROUPS:GROUPS.filter(function(g){return g.id===S.prac.g;}); var all=[]; gs.forEach(function(g){ g.qs.forEach(function(q){ all.push({g:g.id,q:q}); }); }); return all; }
+function nextQ(){ var a=asked(),p=pool(),fresh=p.filter(function(x){return a.indexOf(x.q)<0;}); var src=fresh.length?fresh:p; var c=src[Math.floor(Math.random()*src.length)]; S.prac.q=c; S.prac.sec=S.prac.sec||'90'; T.left=Math.round(num(S.prac.sec))||90; stopT(); save(); renderPrac(); }
+function stopT(){ T.run=false; if(T.id){ clearInterval(T.id); T.id=null; } }
+function tick(){ if(T.left>0){ T.left--; updT(); } if(T.left<=0){ stopT(); updT(); var live=$('#tlive'); if(live) live.textContent='Tiempo terminado'; renderTbtn(); } }
+function mmss(s){ var m=Math.floor(s/60),r=s%60; return m+':'+(r<10?'0':'')+r; }
+function updT(){ var e=$('#tval'); if(e) e.textContent=mmss(T.left); }
+function renderTbtn(){ var b=$('#tbtn'); if(b) b.textContent=T.run?'Pausar':(T.left<=0?'Reiniciar tiempo':'Iniciar'); }
+function renderPrac(){ var g=S.prac.g,q=S.prac.q,gi=q?gOf(q.g):null;
+ var gopts={todas:'Todos los grupos'}; GROUPS.forEach(function(x){ gopts[x.id]=x.t; });
+ var h='<div class="card" style="margin-bottom:14px;"><div class="label">Grupo de preguntas</div>'+seg('prac.g',gopts,g)+'<div class="grid g2" style="gap:12px; margin-top:12px; align-items:end;"><div class="field"><span class="fl">Segundos para responder</span><input type="number" min="15" step="15" data-path="prac.sec" value="'+esc(S.prac.sec)+'"></div><div><button type="button" class="pill-btn primary" id="btnNext">'+(q?'Otra pregunta':'Sacar pregunta')+'</button></div></div></div>';
+ if(q){ h+='<div class="card accent" style="margin-bottom:14px;"><div class="label">'+esc(gi.t)+' · '+gi.clo+'</div><p class="hero-q" style="margin:6px 0 14px;">'+esc(q.q)+'</p><div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap;"><span id="tval" role="timer" style="font-family:var(--font-mono); font-size:28px; color:#fff;">'+mmss(T.left)+'</span><button type="button" class="pill-btn" id="tbtn">'+(T.run?'Pausar':(T.left<=0?'Reiniciar tiempo':'Iniciar'))+'</button><span id="tlive" class="note" aria-live="polite"></span></div></div>'
+  +'<div class="card" style="margin-bottom:14px;"><div class="label">Cómo te fue</div>'+seg('prac.cur.rate',RATE,(S.prac.cur||{}).rate)+'<div style="margin-top:12px;">'+ta('prac.cur.note','Qué te faltó o qué dato debías tener a la mano (opcional)','')+'</div><div style="margin-top:12px;"><button type="button" class="pill-btn primary" id="btnLog">Guardar en mi registro</button></div></div>'; }
+ var log=S.prac.log;
+ h+='<div class="card"><div class="label">Registro de práctica ('+log.length+')</div>'+(log.length?'<div class="mtx-wrap"><table class="mtx"><thead><tr><th scope="col">Pregunta</th><th scope="col">Resultado</th><th scope="col">Nota</th></tr></thead><tbody>'+log.slice().reverse().slice(0,12).map(function(l){ return '<tr><td>'+esc(l.q)+'</td><td>'+esc(RATE[l.rate]||'—')+'</td><td>'+esc(l.note||'')+'</td></tr>'; }).join('')+'</tbody></table></div>':'<p class="note">Aún no registras ninguna práctica.</p>')+'</div>';
+ $('#pracBody').innerHTML=h; labelize(); }
+function logQ(){ var c=S.prac.cur||{}; if(!S.prac.q||!c.rate){ toast('Elige cómo te fue antes de guardar'); return; } S.prac.log.push({q:S.prac.q.q,g:S.prac.q.g,rate:c.rate,note:(c.note||'').trim()}); S.prac.cur=null; S.prac.q=null; stopT(); save(); renderPrac(); renderChecklist(); toast('Guardado'); }
+
+/* DIFICIL */
+function renderHard(){ $('#hardBody').innerHTML=ta('hard.q','La pregunta más difícil que podrían hacerme','Ej.: ¿Qué evidencia tiene de que esto funcionaría en una institución con menos recursos que la del estudio que cita?')+'<div style="margin-top:12px;">'+ta('hard.a','Mi respuesta honesta (qué sé, qué no sé, qué evidencia tengo)','')+'</div><div style="margin-top:12px;">'+ta('hard.cond','Qué condición o dato cambiaría mi recomendación','Ej.: Si el piloto no muestra reducción del abandono en el primer semestre, no escalaría.')+'</div>'; labelize(); }
+
+/* RESUMEN */
+function cover(){ return GROUPS.map(function(g){ var l=S.prac.log.filter(function(x){return x.g===g.id;}); return {g:g,n:l.length,full:l.filter(function(x){return x.rate==='full';}).length,part:l.filter(function(x){return x.rate==='part';}).length,no:l.filter(function(x){return x.rate==='no';}).length}; }); }
+function renderSummary(){ var cv=cover(),cov=cv.filter(function(c){return c.n>0;}).length,tot=S.prac.log.length,full=S.prac.log.filter(function(x){return x.rate==='full';}).length;
+ $('#sumKpis').innerHTML='<div class="card kpi"><div class="val">'+fmt(total())+'<small> min</small></div><div class="lbl">Plan de tiempo</div><div class="read">Rango pedido: 10 a 12 minutos.</div></div><div class="card kpi"><div class="val">'+cov+'<small> / '+GROUPS.length+'</small></div><div class="lbl">Grupos de preguntas practicados</div><div class="bar"><i style="width:'+(cov/GROUPS.length*100)+'%"></i></div></div><div class="card kpi"><div class="val">'+full+'<small> / '+tot+'</small></div><div class="lbl">Respuestas con razones y evidencia</div><div class="read">Autoevaluación tuya, no una medición.</div></div>';
+ $('#covTable').innerHTML='<thead><tr><th scope="col">Tipo de pregunta</th><th scope="col">CLO</th><th scope="col">Practicadas</th><th scope="col">Con razones y evidencia</th><th scope="col">En parte</th><th scope="col">Evadí o no supe</th></tr></thead><tbody>'+cv.map(function(c){ return '<tr><td class="e">'+esc(c.g.t)+'</td><td>'+c.g.clo+'</td><td>'+c.n+'</td><td>'+c.full+'</td><td>'+c.part+'</td><td>'+c.no+'</td></tr>'; }).join('')+'</tbody>'; renderChecklist(); }
+function lastNo(){ var last={}; S.prac.log.forEach(function(l){ last[l.q]=l.rate; }); return Object.keys(last).filter(function(q){return last[q]==='no';}).length; }
+function checklistItems(){ var cv=cover(); return [['Plan de tiempo entre 10 y 12 minutos',planStatus()==='ok'],['Mensaje central escrito en todos los bloques',S.plan.every(function(p){return p.msg.trim();})],['Evidencia señalada en los bloques de evidencia, riesgos y viabilidad',[2,3,6].every(function(i){return S.plan[i].ev.trim();})],['Al menos una pregunta practicada de cada tipo',cv.every(function(c){return c.n>0;})],['Sin preguntas cuyo último intento fue evadir o no saber',S.prac.log.length>0&&lastNo()===0],['Mi pregunta más difícil con respuesta y condición',!!(S.hard.q.trim()&&S.hard.a.trim()&&S.hard.cond.trim())]]; }
+function renderChecklist(){ var el=$('#checklist'); if(!el) return; el.innerHTML=checklistItems().map(function(x){ return '<div><span style="color:'+(x[1]?'var(--teal-400)':'var(--amber)')+'; font-family:var(--font-mono);">'+(x[1]?'●':'○')+'</span> '+esc(x[0])+'</div>'; }).join(''); }
+function buildReport(){ var nombre=S.refl.nombre.trim()||'(sin nombre)',cv=cover(); function v(x){ return x&&String(x).trim()?esc(x):'—'; }
+ var h='<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>VIA7012 S10 · Ficha de ensayo de defensa · '+esc(nombre)+'</title><style>body{font-family:Inter,Segoe UI,Arial,sans-serif;color:#1b2740;max-width:900px;margin:0 auto;padding:40px 28px;line-height:1.55;font-size:13.5px}h1{font-size:24px;color:#062B70;margin:0 0 4px}h2{font-size:17px;color:#062B70;border-bottom:2px solid #1BDAB5;padding-bottom:6px;margin:30px 0 10px}.meta{color:#5a6a8c;font-size:12.5px;margin-bottom:6px}.pre{white-space:pre-wrap;background:#f3f6fc;border:1px solid #d7e0f2;border-radius:10px;padding:10px 14px}table{width:100%;border-collapse:collapse;margin:8px 0 14px;font-size:12.5px}th,td{border:1px solid #d7e0f2;padding:8px 10px;text-align:left;vertical-align:top}th{background:#eef3fb;color:#062B70}@media print{body{padding:0}}</style></head><body>';
+ h+='<div class="meta">Broward International University · VIA7012 Introduction to AI in Sustainable Education · Semana 10 · Ensayo de la presentación y defensa académica (herramienta de práctica, sin nota)</div><h1>Ficha de ensayo de la defensa</h1><div class="meta">'+esc(nombre)+(S.refl.programa.trim()?' · '+esc(S.refl.programa):'')+' · '+new Date().toLocaleDateString('es')+'</div>';
+ h+='<h2>1. Plan de tiempo ('+fmt(total())+' min)</h2><table><tr><th>Bloque</th><th>Min</th><th>Mensaje central</th><th>Evidencia</th></tr>'+SEGS.map(function(x,i){ var p=S.plan[i]; return '<tr><td>'+esc(x[0])+'</td><td>'+esc(p.min)+'</td><td>'+v(p.msg)+'</td><td>'+v(p.ev)+'</td></tr>'; }).join('')+'</table>';
+ h+='<h2>2. Cobertura de la práctica</h2><table><tr><th>Tipo de pregunta</th><th>CLO</th><th>Practicadas</th><th>Con razones y evidencia</th><th>En parte</th><th>Evadí o no supe</th></tr>'+cv.map(function(c){ return '<tr><td>'+esc(c.g.t)+'</td><td>'+c.g.clo+'</td><td>'+c.n+'</td><td>'+c.full+'</td><td>'+c.part+'</td><td>'+c.no+'</td></tr>'; }).join('')+'</table>';
+ var weak=S.prac.log.filter(function(l){return l.rate!=='full';}); h+='<h2>3. Preguntas por reensayar</h2>'+(weak.length?'<table><tr><th>Pregunta</th><th>Resultado</th><th>Nota</th></tr>'+weak.map(function(l){ return '<tr><td>'+esc(l.q)+'</td><td>'+esc(RATE[l.rate])+'</td><td>'+v(l.note)+'</td></tr>'; }).join('')+'</table>':'<p>—</p>');
+ h+='<h2>4. Mi pregunta más difícil</h2><p><b>Pregunta:</b></p><div class="pre">'+v(S.hard.q)+'</div><p><b>Respuesta honesta:</b></p><div class="pre">'+v(S.hard.a)+'</div><p><b>Qué cambiaría mi recomendación:</b></p><div class="pre">'+v(S.hard.cond)+'</div>';
+ h+='<h2>5. Lista de preparación</h2><ul>'+checklistItems().map(function(x){ return '<li>'+(x[1]?'✓ ':'○ ')+esc(x[0])+'</li>'; }).join('')+'</ul><p class="meta">Autoevaluación del doctorando. No es una calificación ni predice el resultado de la defensa.</p></body></html>'; return h; }
+
+/* NAV */
+function labelize(){ $$('input[data-path],textarea[data-path],input[data-ref],textarea[data-ref]').forEach(function(el){ if(el.getAttribute('aria-label')) return; var f=el.closest('.field'),l=f&&$('.fl',f); if(l) el.setAttribute('aria-label',l.textContent); }); }
+function showTab(i){ $$('.tab').forEach(function(t){ var on=+t.getAttribute('data-tab')===i; t.classList.toggle('active',on); if(on) t.setAttribute('aria-current','page'); else t.removeAttribute('aria-current'); }); $$('.panel').forEach(function(p){ p.classList.toggle('active',+p.getAttribute('data-panel')===i); }); window.scrollTo(0,0); if(i===1) renderPlan(); if(i===2) renderPrac(); if(i===3) renderHard(); if(i===4){ renderSummary(); $$('[data-ref]').forEach(function(el){ el.value=S.refl[el.getAttribute('data-ref')]||''; }); labelize(); } markTabs(); }
+function markTabs(){ $('.tab[data-tab="1"]').classList.toggle('has-done',planStatus()==='ok'&&S.plan.every(function(p){return p.msg.trim();})); $('.tab[data-tab="2"]').classList.toggle('has-done',cover().every(function(c){return c.n>0;})); $('.tab[data-tab="3"]').classList.toggle('has-done',!!(S.hard.q.trim()&&S.hard.a.trim()&&S.hard.cond.trim())); }
+document.addEventListener('click',function(ev){ var t=ev.target.closest('button'); if(!t) return;
+ if(t.classList.contains('tab')){ showTab(+t.getAttribute('data-tab')); return; }
+ if(t.classList.contains('goto')){ showTab(+t.getAttribute('data-goto')); return; }
+ if(t.id==='btnDownload'||t.id==='btnDownloadTop'){ dl('VIA7012_S10_Ensayo_Defensa'+((S.refl.nombre||'').trim()?'_'+S.refl.nombre.trim().replace(/[^\wÀ-ſ]+/g,'_'):'')+'.html',buildReport(),'text/html;charset=utf-8'); toast('Ficha descargada'); return; }
+ if(t.id==='btnNext'){ nextQ(); return; }
+ if(t.id==='btnLog'){ logQ(); return; }
+ if(t.id==='tbtn'){ if(T.run){ stopT(); } else { if(T.left<=0) T.left=Math.round(num(S.prac.sec))||90; T.run=true; T.id=setInterval(tick,1000); var lv=$('#tlive'); if(lv) lv.textContent=''; } updT(); renderTbtn(); return; }
+ if(t.id==='btnReset'){ if(window.confirm('Se borrarán el plan, el registro de práctica y los textos. ¿Continuar?')){ try{ window.localStorage.removeItem(STORE_KEY); }catch(x){} stopT(); S=freshState(); showTab(0); toast('Herramienta reiniciada'); } return; }
+ var sg=t.closest('.seg'); if(sg){ var path=sg.getAttribute('data-path'),vv=t.getAttribute('data-v'),cur=getPath(path); setPath(path,String(cur)===vv&&path!=='prac.g'?null:vv); save(); $$('button',sg).forEach(function(b){ var on=b.getAttribute('data-v')===String(getPath(path)); b.classList.toggle('on',on); b.setAttribute('aria-pressed',on); }); if(path==='prac.g'){ S.prac.q=null; stopT(); renderPrac(); } return; }
+});
+document.addEventListener('input',function(ev){ var el=ev.target; if(el.hasAttribute('data-path')){ setPath(el.getAttribute('data-path'),el.value); save(); if(/^plan\./.test(el.getAttribute('data-path'))){ clearTimeout(document._sp); document._sp=setTimeout(function(){ var a=document.activeElement,id=a&&a.getAttribute('data-path'),pos=a&&a.selectionStart; var kp=$('#planKpis'); if(kp){ var t=total(),st=planStatus(),msgs=S.plan.filter(function(p){return p.msg.trim();}).length,evs=S.plan.filter(function(p){return p.ev.trim();}).length; kp.innerHTML='<div class="card kpi"><div class="val">'+fmt(t)+'<small> min</small></div><div class="lbl">Tiempo total planificado</div><div class="read">'+(st==='ok'?'Dentro de los 10 a 12 minutos.':st==='bajo'?'Por debajo de 10 minutos.':'Por encima de 12 minutos.')+'</div></div><div class="card kpi"><div class="val">'+msgs+'<small> / '+SEGS.length+'</small></div><div class="lbl">Bloques con mensaje central</div><div class="bar"><i style="width:'+(msgs/SEGS.length*100)+'%"></i></div></div><div class="card kpi"><div class="val">'+evs+'<small> / '+SEGS.length+'</small></div><div class="lbl">Bloques con evidencia señalada</div><div class="read">Cada afirmación importante debería tener una fuente a la mano.</div></div>'; } markTabs(); },300); } else markTabs(); return; }
+ if(el.hasAttribute('data-ref')){ S.refl[el.getAttribute('data-ref')]=el.value; save(); } });
+load(); showTab(0);
+})();
+
+</script>
+</body>
+</html>
