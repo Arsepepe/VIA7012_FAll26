@@ -285,7 +285,7 @@ function viewSemana(n) {
   <section class="card read"><div class="sec-title"><div class="eyebrow">Lecturas del Syllabus</div><h2>Qué leer</h2></div>
     <div class="grid2"><div><h3>Requeridas</h3><ul>${listItems(lec.req)}</ul></div>${lec.comp.length ? `<div><h3>Complementarias</h3><ul>${listItems(lec.comp)}</ul></div>` : ''}</div></section>
   ${w.nota ? `<div class="warnbox">${esc(w.nota)}</div>` : ''}
-  <div class="warnbox">Uso de IA: el curso permite usar IA con espíritu crítico, con verificación, evaluación crítica y declaración de uso. Si el anuncio del lunes limita su uso en una actividad, ese límite prevalece.</div>
+  <div class="warnbox">Uso de IA: el curso permite usar IA con espíritu crítico, con verificación, evaluación crítica y declaración de uso. La única condición es declarar el uso.</div>
   <nav class="pager" aria-label="Semanas">
     ${prev ? `<button type="button" data-go="semana-${prev.n}"><small>← SEMANA ${prev.n}</small><span>${esc(prev.short)}</span></button>` : '<span class="ph"></span>'}
     ${next ? `<button type="button" data-go="semana-${next.n}"><small>SEMANA ${next.n} →</small><span>${esc(next.short)}</span></button>` : `<button type="button" data-go="recursos"><small>FINAL →</small><span>Recursos y rúbricas</span></button>`}
